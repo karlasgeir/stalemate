@@ -3,13 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stalemate/stalemate.dart';
 
 class StringLoader extends StaleMateLoader<String?> {
-  String? _localData = 'initial local data';
+  String? _localData;
   bool shouldThrowError = false;
   int timesUpdatedFromRemote = 0;
 
   StringLoader({
+    String? initialLocalData = 'initial local data',
     bool updateOnInit = true,
-  }) : super(
+  })  : _localData = initialLocalData,
+        super(
           emptyValue: null,
           updateOnInit: updateOnInit,
         );
@@ -59,6 +61,25 @@ void main() {
     test(
         'value should be remote data after initialization is complete if updateOnInit is true',
         () async {
+      await stringLoader.initialize();
+      expect(stringLoader.value, equals('remote data 1'));
+    });
+
+    test(
+        'value should be remote data after initialization is complete if local data is null',
+        () async {
+      stringLoader = StringLoader(initialLocalData: null);
+      await stringLoader.initialize();
+      expect(stringLoader.value, equals('remote data 1'));
+    });
+
+    test(
+        'value should be remote data after initialization is complete if local data is null and updateOnInit is false',
+        () async {
+      stringLoader = StringLoader(
+        initialLocalData: null,
+        updateOnInit: false,
+      );
       await stringLoader.initialize();
       expect(stringLoader.value, equals('remote data 1'));
     });

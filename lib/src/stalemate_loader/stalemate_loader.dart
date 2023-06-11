@@ -113,7 +113,7 @@ abstract class StaleMateLoader<T> {
     try {
       final localData = await getLocalData();
       _subject.add(localData);
-      return true;
+      return localData != emptyValue;
     } catch (e) {
       return false;
       // Do nothing, we'll try to get remote data
@@ -132,7 +132,7 @@ abstract class StaleMateLoader<T> {
       } else if (!_subject.hasValue || value == emptyValue) {
         _addError(error);
       }
-      
+
       rethrow;
     }
   }
@@ -140,7 +140,7 @@ abstract class StaleMateLoader<T> {
   /// Loads local data first, then remote data
   Future<void> initialize() async {
     await _loadLocalData();
-    if (updateOnInit) {
+    if (updateOnInit || !_subject.hasValue || value == emptyValue) {
       await _refresher.refresh();
     }
   }
