@@ -26,7 +26,7 @@ class StaleMateBuilder<T> extends StatelessWidget {
       return StaleMateData<T>(
           errorData: snapshot.error, state: StaleMateDataState.error);
     }
-    if (snapshot.hasData) {
+    if (snapshot.hasData && snapshot.data != loader.emptyValue) {
       return StaleMateData<T>(
           data: snapshot.requireData, state: StaleMateDataState.loaded);
     }
