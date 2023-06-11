@@ -1,4 +1,5 @@
 import 'package:rxdart/subjects.dart';
+import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
 
 import '../stalemate_refresher/stalemate_refresh_config.dart';
 import '../stalemate_refresher/stalemate_refresher.dart';
@@ -33,11 +34,18 @@ abstract class StaleMateLoader<T> {
   /// For arrays this is usually an empty array, for strings an empty string,
   /// for nullable types this is usually null, etc.
   /// This value will also be used to reset the stream when [reset] is called.
-  final T _emptyValue;
+  final T emptyValue;
 
   /// Whether or not the data should be updated when the data loader is initialized
   /// Defaults to true
-  final bool _updateOnInit;
+  final bool updateOnInit;
+
+  /// Whether or not the local data should be shown when an error occurs
+  /// If this is set to false, the error will be shown instead even if local data is available
+  /// This is useful if an error occurs while loading remote data, but you still want to show
+  /// the local data if it is available.
+  /// Defaults to true
+  final bool showLocalDataOnError;
 
   /// The subject that will be used to stream the data
   late final BehaviorSubject<T> _subject;
@@ -47,12 +55,12 @@ abstract class StaleMateLoader<T> {
 
   /// Default constructor
   StaleMateLoader({
-    required T emptyValue,
-    bool updateOnInit = true,
+    required this.emptyValue,
+    this.updateOnInit = true,
+    this.showLocalDataOnError = true,
     StaleMateRefreshConfig? refreshConfig,
-  })  : _emptyValue = emptyValue,
-        _updateOnInit = updateOnInit {
-    _subject = BehaviorSubject.seeded(_emptyValue);
+  }) {
+    _subject = BehaviorSubject();
     _refresher = StaleMateRefresher(
       refreshConfig: refreshConfig,
       onRefresh: _loadRemoteData,
@@ -113,36 +121,47 @@ abstract class StaleMateLoader<T> {
   }
 
   /// Loads remote data and adds it to the stream
-  Future<bool> _loadRemoteData() async {
+  Future<T> _loadRemoteData() async {
     try {
       final remoteData = await getRemoteData();
       await addData(remoteData);
-      return true;
+      return remoteData;
     } catch (error) {
-      if (value == null || value == _emptyValue) {
+      if (!showLocalDataOnError) {
+        _addError(error);
+      } else if (!_subject.hasValue || value == emptyValue) {
         _addError(error);
       }
-      return false;
+      
+      rethrow;
     }
   }
 
   /// Loads local data first, then remote data
   Future<void> initialize() async {
     await _loadLocalData();
-    if (_updateOnInit) {
+    if (updateOnInit) {
       await _refresher.refresh();
     }
   }
 
   /// Updates the data by loading remote data
-  Future<bool> refresh() async {
+  /// Returns the [StaleMateRefreshResult] of the refresh
+  /// Note that you do not have to handle the refresh result if you don't want to
+  /// If the refresh succeeds, the data will be added to the data stream automatically
+  /// If the refresh fails, the error will be added to the data stream automatically
+  /// depending on the configuration of the [showLocalDataOnError] property
+  /// The refresh result is returned in case you want to handle it
+  /// For example, to indicate to the user if the refresh succeeded or not
+  /// or to show a message to the user if the refresh failed
+  Future<StaleMateRefreshResult> refresh() async {
     return _refresher.refresh();
   }
 
   /// Resets the data to the empty value and removes local data
   Future<void> reset() async {
     await removeLocalData();
-    _subject.add(_emptyValue);
+    _subject.add(emptyValue);
   }
 
   /// Closes the stream

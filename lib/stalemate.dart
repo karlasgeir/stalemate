@@ -1,10 +1,13 @@
 library stalemate;
 
+import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
+
 import 'src/stalemate_loader/stalemate_loader.dart';
 import 'src/stalemate_registry/stalemate_registry.dart';
 
 export 'src/stalemate_loader/stalemate_loader.dart';
 export 'src/stalemate_refresher/stalemate_refresh_config.dart';
+export 'src/stalemate_builder/stalemate_builder.dart';
 
 /// Public API for StaleMate.
 /// This class is used to perform operations on all loaders or loaders of a specific type
@@ -22,10 +25,15 @@ class StaleMate {
       StaleMateRegistry.instance.getAllLoaders();
 
   /// Refreshes all loaders registered with StaleMate.
-  /// Returns whether all loaders were refreshed successfully.
-  /// The errors for each loader will be addded to the [StaleMateLoader.stream] stream.
-  static Future<bool> refreshAllLoaders() => StaleMateRegistry.instance
-      .refreshAllLoaders();
+  /// Returns a list of [StaleMateRefreshResult]s for each loader, indicating whether the loader was refreshed successfully.
+  /// Even though the loaders are refreshed in parallel, the results are returned in the order of the loaders.
+  /// Even though the [StaleMateRefreshResult] contains the refreshed data, there is no need to use it unless you want to.
+  /// The refreshed data will be available automatically through the [StaleMateLoader.stream] stream.
+  /// The errors for each loader will be addded to the [StaleMateLoader.stream] stream, depending on the [StaleMateLoader.showLocalDataOnError] parameter
+  /// If you want to refresh all loaders of a specific type, use [refreshLoaders].
+  /// If you want to refresh the first loader of a specific type, use [refreshFirstLoader].
+  static Future<List<StaleMateRefreshResult>> refreshAllLoaders() =>
+      StaleMateRegistry.instance.refreshAllLoaders();
 
   /// Resets all loaders registered with StaleMate.
   /// This will clear all data from the loaders and call their [StaleMateLoader.removeLocalData] method.
@@ -33,26 +41,26 @@ class StaleMate {
   static Future<void> resetAllLoaders() =>
       StaleMateRegistry.instance.resetAllLoaders();
 
-
   /// Returns all loaders of the given type registered with StaleMate.
   /// Returns an empty list if no loaders are found.
-  /// If multiple loaders are found, all of them are returned.
   /// If you only want the first loader, use [getFirstLoader].
   static List<StaleMateLoader> getLoaders<T extends StaleMateLoader>() =>
-      StaleMateRegistry.instance.getLoaders<T>();  
+      StaleMateRegistry.instance.getLoaders<T>();
 
   /// Refreshes all loaders of the given type registered with StaleMate.
-  /// Returns whether all loaders were refreshed successfully.
-  /// The errors for each loader will be addded to the [StaleMateLoader.stream] stream.
-  /// If multiple loaders are found, all of them are refreshed.
+  /// Returns a list of [StaleMateRefreshResult]s for each loader, indicating whether the loader was refreshed successfully.
+  /// Even though the loaders are refreshed in parallel, the results are returned in the order of the loaders.
+  /// Even though the [StaleMateRefreshResult] contains the refreshed data, there is no need to use it unless you want to.
+  /// The refreshed data will be available automatically through the [StaleMateLoader.stream] stream.
+  /// The errors for each loader will be addded to the [StaleMateLoader.stream] stream, depending on the [StaleMateLoader.showLocalDataOnError] parameter
   /// If you only want to refresh the first loader, use [refreshFirstLoader].
-  static Future<bool> refreshLoaders<T extends StaleMateLoader>() =>
-      StaleMateRegistry.instance.refreshLoaders<T>();
+  static Future<List<StaleMateRefreshResult>>
+      refreshLoaders<T extends StaleMateLoader>() =>
+          StaleMateRegistry.instance.refreshLoaders<T>();
 
   /// Resets all loaders of the given type registered with StaleMate.
   /// This will clear all data from the loaders and call their [StaleMateLoader.removeLocalData] method.
   /// The loaders will be reset to their empty value.
-  /// If multiple loaders are found, all of them are reset.
   /// If you only want to reset the first loader, use [resetFirstLoader].
   static Future<void> resetLoaders<T extends StaleMateLoader>() =>
       StaleMateRegistry.instance.resetLoaders<T>();
@@ -71,15 +79,17 @@ class StaleMate {
       StaleMateRegistry.instance.getFirstLoader<T>();
 
   /// Refreshes a [StaleMateLoader] from the registry.
-  /// Returns whether the loader was refreshed successfully.
-  /// The error will be addded to the [StaleMateLoader.stream] stream.
-  /// Returns false if no loader is found.
-  /// If multiple loaders are found, the first one is refreshed.
+  /// Returns a [StaleMateRefreshResult] indicating whether the loader was refreshed successfully.
+  /// Even though the [StaleMateRefreshResult] contains the refreshed data, there is no need to use it unless you want to.
+  /// The refreshed data will be available automatically through the [StaleMateLoader.stream] stream.
+  /// The error will be addded to the [StaleMateLoader.stream] stream, depending on the [StaleMateLoader.showLocalDataOnError] parameter
+  /// Throws an assertion error if no loader is found. Use [hasLoader] to check if a loader exists.
   /// If you want to refresh all loaders, use [refreshAllLoaders].
   /// If you want to refresh all loaders of a specific type, use [refreshLoaders].
   /// If you want to refresh a specific loader, use [StaleMateLoader.refresh] on the loader instance.
-  static Future<bool> refreshFirstLoader<T extends StaleMateLoader>() =>
-      StaleMateRegistry.instance.refreshFirstLoader<T>();
+  static Future<StaleMateRefreshResult>
+      refreshFirstLoader<T extends StaleMateLoader>() =>
+          StaleMateRegistry.instance.refreshFirstLoader<T>();
 
   /// Resets a [StaleMateLoader] from the registry.
   /// This will clear all data from the loader and call its [StaleMateLoader.removeLocalData] method.

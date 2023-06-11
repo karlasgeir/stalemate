@@ -8,9 +8,11 @@
 import 'dart:async' as _i2;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i5;
-import 'package:stalemate/src/stalemate_loader/stalemate_loader.dart' as _i4;
+import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:stalemate/src/stalemate_loader/stalemate_loader.dart' as _i5;
 import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_config.dart'
+    as _i4;
+import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart'
     as _i3;
 
 // ignore_for_file: type=lint
@@ -44,11 +46,22 @@ class _FakeFuture_1<T1> extends _i1.SmartFake implements _i2.Future<T1> {
         );
 }
 
+class _FakeStaleMateRefreshResult_2<T1> extends _i1.SmartFake
+    implements _i3.StaleMateRefreshResult<T1> {
+  _FakeStaleMateRefreshResult_2(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
 /// A class which mocks [StaleMateRefreshConfig].
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockStaleMateRefreshConfig extends _i1.Mock
-    implements _i3.StaleMateRefreshConfig {
+    implements _i4.StaleMateRefreshConfig {
   MockStaleMateRefreshConfig() {
     _i1.throwOnMissingStub(this);
   }
@@ -82,11 +95,29 @@ class MockStaleMateRefreshConfig extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockStaleMateLoader<T> extends _i1.Mock
-    implements _i4.StaleMateLoader<T> {
+    implements _i5.StaleMateLoader<T> {
   MockStaleMateLoader() {
     _i1.throwOnMissingStub(this);
   }
 
+  @override
+  T get emptyValue => (super.noSuchMethod(
+        Invocation.getter(#emptyValue),
+        returnValue: _i6.dummyValue<T>(
+          this,
+          Invocation.getter(#emptyValue),
+        ),
+      ) as T);
+  @override
+  bool get updateOnInit => (super.noSuchMethod(
+        Invocation.getter(#updateOnInit),
+        returnValue: false,
+      ) as bool);
+  @override
+  bool get showLocalDataOnError => (super.noSuchMethod(
+        Invocation.getter(#showLocalDataOnError),
+        returnValue: false,
+      ) as bool);
   @override
   _i2.Stream<T> get stream => (super.noSuchMethod(
         Invocation.getter(#stream),
@@ -95,7 +126,7 @@ class MockStaleMateLoader<T> extends _i1.Mock
   @override
   T get value => (super.noSuchMethod(
         Invocation.getter(#value),
-        returnValue: _i5.dummyValue<T>(
+        returnValue: _i6.dummyValue<T>(
           this,
           Invocation.getter(#value),
         ),
@@ -106,8 +137,8 @@ class MockStaleMateLoader<T> extends _i1.Mock
           #getLocalData,
           [],
         ),
-        returnValue: _i5.ifNotNull(
-              _i5.dummyValueOrNull<T>(
+        returnValue: _i6.ifNotNull(
+              _i6.dummyValueOrNull<T>(
                 this,
                 Invocation.method(
                   #getLocalData,
@@ -130,8 +161,8 @@ class MockStaleMateLoader<T> extends _i1.Mock
           #getRemoteData,
           [],
         ),
-        returnValue: _i5.ifNotNull(
-              _i5.dummyValueOrNull<T>(
+        returnValue: _i6.ifNotNull(
+              _i6.dummyValueOrNull<T>(
                 this,
                 Invocation.method(
                   #getRemoteData,
@@ -185,13 +216,21 @@ class MockStaleMateLoader<T> extends _i1.Mock
         returnValueForMissingStub: _i2.Future<void>.value(),
       ) as _i2.Future<void>);
   @override
-  _i2.Future<bool> refresh() => (super.noSuchMethod(
+  _i2.Future<_i3.StaleMateRefreshResult<dynamic>> refresh() =>
+      (super.noSuchMethod(
         Invocation.method(
           #refresh,
           [],
         ),
-        returnValue: _i2.Future<bool>.value(false),
-      ) as _i2.Future<bool>);
+        returnValue: _i2.Future<_i3.StaleMateRefreshResult<dynamic>>.value(
+            _FakeStaleMateRefreshResult_2<dynamic>(
+          this,
+          Invocation.method(
+            #refresh,
+            [],
+          ),
+        )),
+      ) as _i2.Future<_i3.StaleMateRefreshResult<dynamic>>);
   @override
   _i2.Future<void> reset() => (super.noSuchMethod(
         Invocation.method(

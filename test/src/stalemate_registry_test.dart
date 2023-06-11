@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:stalemate/src/stalemate_loader/stalemate_loader.dart';
+import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
 import 'package:stalemate/src/stalemate_registry/stalemate_registry.dart';
 
 import 'stalemate_registry_test.mocks.dart';
@@ -16,6 +17,18 @@ class StaleMateLoaderImpl2 extends StaleMateLoader<int> {
 
 @GenerateMocks([StaleMateLoaderImpl1, StaleMateLoaderImpl2])
 void main() {
+  final mockRefreshSuccessResult = StaleMateRefreshResult.success(
+    data: true,
+    refreshInitiatedAt: DateTime.now(),
+    refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
+  );
+
+  final mockRefreshFailureResult = StaleMateRefreshResult.failure(
+    error: Exception('Refresh failed'),
+    refreshInitiatedAt: DateTime.now(),
+    refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
+  );
+
   tearDown(() {
     StaleMateRegistry.instance.unregisterAll();
   });
@@ -73,63 +86,79 @@ void main() {
       final loader2 = MockStaleMateLoaderImpl1();
       final loader3 = MockStaleMateLoaderImpl2();
 
-      when(loader1.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader2.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader3.refresh()).thenAnswer((_) => Future.value(true));
+      when(loader1.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader2.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader3.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      await StaleMateRegistry.instance.refreshAllLoaders();
+      final refreshResults =
+          await StaleMateRegistry.instance.refreshAllLoaders();
+
+      for (var result in refreshResults) {
+        expect(result.isSuccess, true);
+      }
 
       verify(loader1.refresh()).called(1);
       verify(loader2.refresh()).called(1);
       verify(loader3.refresh()).called(1);
     });
 
-    test(
-        'refresh all loaders returns false if one loader returns false on refresh',
-        () async {
+    test('refresh all loaders with one error', () async {
       final loader1 = MockStaleMateLoaderImpl1();
       final loader2 = MockStaleMateLoaderImpl1();
       final loader3 = MockStaleMateLoaderImpl2();
 
-      when(loader1.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader2.refresh()).thenAnswer((_) => Future.value(false));
-      when(loader3.refresh()).thenAnswer((_) => Future.value(true));
+      when(loader1.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader2.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshFailureResult));
+      when(loader3.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      final result = await StaleMateRegistry.instance.refreshAllLoaders();
+      final resfreshResults =
+          await StaleMateRegistry.instance.refreshAllLoaders();
 
-      expect(result, false);
+      expect(resfreshResults[0].isSuccess, true);
+      expect(resfreshResults[1].isSuccess, false);
+      expect(resfreshResults[2].isSuccess, true);
 
       verify(loader1.refresh()).called(1);
       verify(loader2.refresh()).called(1);
       verify(loader3.refresh()).called(1);
     });
 
-    test(
-        'refresh all loaders returns false if all loaders return false on refresh',
-        () async {
+    test('refresh all loaders with all errors', () async {
       final loader1 = MockStaleMateLoaderImpl1();
       final loader2 = MockStaleMateLoaderImpl1();
       final loader3 = MockStaleMateLoaderImpl2();
 
-      when(loader1.refresh()).thenAnswer((_) => Future.value(false));
-      when(loader2.refresh()).thenAnswer((_) => Future.value(false));
-      when(loader3.refresh()).thenAnswer((_) => Future.value(false));
+      when(loader1.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshFailureResult));
+      when(loader2.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshFailureResult));
+      when(loader3.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshFailureResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      final result = await StaleMateRegistry.instance.refreshAllLoaders();
+      final refreshResult =
+          await StaleMateRegistry.instance.refreshAllLoaders();
 
-      expect(result, false);
+      for (var result in refreshResult) {
+        expect(result.isSuccess, false);
+      }
 
       verify(loader1.refresh()).called(1);
       verify(loader2.refresh()).called(1);
@@ -178,16 +207,23 @@ void main() {
       final loader2 = MockStaleMateLoaderImpl1();
       final loader3 = MockStaleMateLoaderImpl2();
 
-      when(loader1.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader2.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader3.refresh()).thenAnswer((_) => Future.value(true));
+      when(loader1.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader2.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader3.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      await StaleMateRegistry.instance
+      final refreshResults = await StaleMateRegistry.instance
           .refreshLoaders<MockStaleMateLoaderImpl1>();
+
+      for (var result in refreshResults) {
+        expect(result.isSuccess, true);
+      }
 
       verify(loader1.refresh()).called(1);
       verify(loader2.refresh()).called(1);
@@ -276,10 +312,14 @@ void main() {
       final loader3 = MockStaleMateLoaderImpl1();
       final loader4 = MockStaleMateLoaderImpl2();
 
-      when(loader1.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader2.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader3.refresh()).thenAnswer((_) => Future.value(true));
-      when(loader4.refresh()).thenAnswer((_) => Future.value(true));
+      when(loader1.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader2.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader3.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+      when(loader4.refresh())
+          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);

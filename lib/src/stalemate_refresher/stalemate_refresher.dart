@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
+import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
 import '../clock/clock.dart';
 import 'stalemate_refresh_config.dart';
 
@@ -10,13 +11,13 @@ import 'stalemate_refresh_config.dart';
 /// The class uses the [WidgetsBindingObserver] to listen for app lifecycle changes.
 /// If the app is resumed, the data will be refreshed when the stale period has passed.
 /// If the app is backgrounded, the refresh timer will be suspended
-class StaleMateRefresher extends WidgetsBindingObserver {
+class StaleMateRefresher<T> extends WidgetsBindingObserver {
   /// The clock that will be used to determine the current time
   /// This is exposed for testing purposes and defaults to [SystemClock]
   late final Clock _clock;
 
   /// The data loader that will be used to refresh the data
-  final Future<bool> Function() _onRefresh;
+  final Future<T> Function() _onRefresh;
 
   /// The refresh config that decides when the data should be refreshed
   /// If this is null, the data will not be refreshed automatically
@@ -32,7 +33,7 @@ class StaleMateRefresher extends WidgetsBindingObserver {
   bool isRefreshing = false;
 
   StaleMateRefresher({
-    required Future<bool> Function() onRefresh,
+    required Future<T> Function() onRefresh,
     StaleMateRefreshConfig? refreshConfig,
     Clock? clock,
   })  : _refreshConfig = refreshConfig,
@@ -68,29 +69,48 @@ class StaleMateRefresher extends WidgetsBindingObserver {
   }
 
   /// Refreshes the data
-  Future<bool> refresh() async {
+  /// This does not care if the data is stale or not, since the data loader always supports manual refresh
+  /// If the data is already being refreshed, this will return a [StaleMateRefreshResult.alreadyRefreshing]
+  /// If the data was refreshed successfully, this will return a [StaleMateRefreshResult.success] with the refreshed data
+  /// If the data failed to refresh, this will return a [StaleMateRefreshResult.failure] with the error that occurred
+  Future<StaleMateRefreshResult> refresh() async {
+    final refreshInitiatedAt = _clock.now();
     // Guard against multiple simultaneous refreshes
     if (isRefreshing) {
-      return true;
+      return StaleMateRefreshResult.alreadyRefreshing(
+        refreshInitiatedAt: refreshInitiatedAt,
+        refreshFinishedAt: _clock.now(),
+      );
     }
 
     isRefreshing = true;
 
-    var refreshed = false;
     try {
-      refreshed = await _onRefresh();
+      final refreshedData = await _onRefresh();
+      
+      _lastRefresh = _clock.now();
+      _scheduleNextRefresh();
+      isRefreshing = false;
+
+      return StaleMateRefreshResult.success(
+        data: refreshedData,
+        refreshInitiatedAt: refreshInitiatedAt,
+        refreshFinishedAt: _clock.now(),
+      );
     } catch (error) {
-      // Refresh failed
+       // Since the refresh timer will be scheduled based on the last refresh time,
+      // we need to update the last refresh time before scheduling the next refresh
+      // even if the refresh failed
+      _lastRefresh = _clock.now();
+      _scheduleNextRefresh();
+      isRefreshing = false;
+      
+      return StaleMateRefreshResult.failure(
+        error: error,
+        refreshInitiatedAt: refreshInitiatedAt,
+        refreshFinishedAt: _clock.now(),
+      );
     }
-
-    // Since the refresh timer will be scheduled based on the last refresh time,
-    // we need to update the last refresh time before scheduling the next refresh
-    // even if the refresh failed
-    _lastRefresh = _clock.now();
-    _scheduleNextRefresh();
-    isRefreshing = false;
-
-    return refreshed;
   }
 
   /// Schedules the next refresh
