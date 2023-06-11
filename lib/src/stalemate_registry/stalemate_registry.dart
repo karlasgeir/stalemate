@@ -1,5 +1,5 @@
 import 'package:collection/collection.dart';
-import 'package:stalemate/src/utils/future_utils.dart';
+import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
 
 import '../stalemate_loader/stalemate_loader.dart';
 
@@ -49,26 +49,17 @@ class StaleMateRegistry {
   /// Refreshes all [StaleMateLoader]s in the registry
   /// Returns whether all loaders were refreshed successfully
   /// The errors for each loader will be addded to the [StaleMateLoader.stream] stream
-  Future<bool> refreshAllLoaders() async {
-    final results = await executeConcurrently(
-      _loaders.map((loader) => loader.refresh()).toList(),
-    );
-
-    return results.every(
-      (result) => result.fold(
-        (failure) => false,
-        (wasSuccess) => wasSuccess,
-      ),
-    );
+  Future<List<StaleMateRefreshResult>> refreshAllLoaders() async {
+    final refreshRequests = _loaders.map((loader) => loader.refresh()).toList();
+    return Future.wait(refreshRequests);
   }
 
   /// Resets all [StaleMateLoader]s in the registry
   /// This will clear the local data of each loader and
   /// reset the data to its empty value
   Future<void> resetAllLoaders() {
-    return executeConcurrently(
-      _loaders.map((loader) => loader.reset()).toList(),
-    );
+    final restRequests = _loaders.map((loader) => loader.reset()).toList();
+    return Future.wait(restRequests);
   }
 
   /// Gets all [StaleMateLoader]s of type [T] from the registry
@@ -81,26 +72,20 @@ class StaleMateRegistry {
   }
 
   /// Refreshes all [StaleMateLoader]s of type [T] in the registry
-  Future<bool> refreshLoaders<T extends StaleMateLoader>() async {
+  Future<List<StaleMateRefreshResult>>
+      refreshLoaders<T extends StaleMateLoader>() async {
     final loaders = getLoaders<T>();
-    final results = await executeConcurrently(
-      loaders.map((loader) => loader.refresh()).toList(),
-    );
-    return results.every(
-      (result) => result.fold(
-        (failure) => false,
-        (wasSuccess) => wasSuccess,
-      ),
-    );
+    final refreshRequests = loaders.map((loader) => loader.refresh()).toList();
+    return Future.wait(refreshRequests);
   }
 
   /// Resets all [StaleMateLoader]s of type [T] in the registry
   /// This will clear the local data of each loader and
   /// reset the data to its empty value
   Future<void> resetLoaders<T extends StaleMateLoader>() {
-    return executeConcurrently(
-      getLoaders<T>().map((loader) => loader.reset()).toList(),
-    );
+    final resetLoadersRequest =
+        getLoaders<T>().map((loader) => loader.reset()).toList();
+    return Future.wait(resetLoadersRequest);
   }
 
   /// Gets the first [StaleMateLoader] of type [T] from the registry
@@ -113,12 +98,11 @@ class StaleMateRegistry {
     return getFirstLoader<T>() != null;
   }
 
-  Future<bool> refreshFirstLoader<T extends StaleMateLoader>() async {
+  Future<StaleMateRefreshResult>
+      refreshFirstLoader<T extends StaleMateLoader>() async {
     final loader = getFirstLoader<T>();
-    if (loader == null) {
-      return false;
-    }
-    return loader.refresh();
+    assert(loader != null, 'No loader of type $T found in registry');
+    return loader!.refresh();
   }
 
   /// Resets the first [StaleMateLoader] of type [T] in the registry
@@ -126,9 +110,8 @@ class StaleMateRegistry {
   /// reset the data to its empty value
   Future<void> resetFirstLoader<T extends StaleMateLoader>() {
     final loader = getFirstLoader<T>();
-    if (loader == null) {
-      return Future.value();
-    }
-    return loader.reset();
+    assert(loader != null, 'No loader of type $T found in registry');
+
+    return loader!.reset();
   }
 }

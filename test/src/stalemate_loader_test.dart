@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:stalemate/stalemate.dart';
 
 class StringLoader extends StaleMateLoader<String?> {
-  String? _localData = 'intial local data';
+  String? _localData = 'initial local data';
+  bool shouldThrowError = false;
+  int timesUpdatedFromRemote = 0;
 
   StringLoader({
     bool updateOnInit = true,
@@ -20,7 +22,10 @@ class StringLoader extends StaleMateLoader<String?> {
   @override
   Future<String?> getRemoteData() async {
     await Future.delayed(const Duration(milliseconds: 10));
-    return 'remote data';
+    if (shouldThrowError) {
+      throw Exception('Failed to fetch remote data');
+    }
+    return 'remote data ${++timesUpdatedFromRemote}';
   }
 
   @override
@@ -30,6 +35,8 @@ class StringLoader extends StaleMateLoader<String?> {
 
   @override
   Future<void> removeLocalData() async {
+    shouldThrowError = false;
+    timesUpdatedFromRemote = 0;
     _localData = null;
   }
 }
@@ -46,14 +53,14 @@ void main() {
         () async {
       stringLoader.initialize();
       await Future.delayed(const Duration(milliseconds: 5));
-      expect(stringLoader.value, equals('intial local data'));
+      expect(stringLoader.value, equals('initial local data'));
     });
 
     test(
         'value should be remote data after initialization is complete if updateOnInit is true',
         () async {
       await stringLoader.initialize();
-      expect(stringLoader.value, equals('remote data'));
+      expect(stringLoader.value, equals('remote data 1'));
     });
 
     test(
@@ -61,13 +68,23 @@ void main() {
         () async {
       stringLoader = StringLoader(updateOnInit: false);
       await stringLoader.initialize();
-      expect(stringLoader.value, equals('intial local data'));
+      expect(stringLoader.value, equals('initial local data'));
     });
 
     test('value should be remote data after refresh', () async {
       await stringLoader.initialize();
       await stringLoader.refresh();
-      expect(stringLoader.value, equals('remote data'));
+      expect(stringLoader.value, equals('remote data 2'));
+    });
+
+    test('value should get new remote data after refresh', () async {
+      await stringLoader.initialize();
+      expect(stringLoader.value, equals('remote data 1'));
+      await stringLoader.refresh();
+      expect(stringLoader.value, equals('remote data 2'));
+      await Future.delayed(const Duration(milliseconds: 5));
+      await stringLoader.refresh();
+      expect(stringLoader.value, equals('remote data 3'));
     });
 
     test('value should be null after clear', () async {
@@ -80,7 +97,34 @@ void main() {
       await stringLoader.initialize();
       await stringLoader.refresh();
       final localData = await stringLoader.getLocalData();
-      expect(localData, equals('remote data'));
+      expect(localData, equals('remote data 2'));
+    });
+
+    test('local data should be null after clear', () async {
+      await stringLoader.initialize();
+      await stringLoader.reset();
+      final localData = await stringLoader.getLocalData();
+      expect(localData, equals(null));
+    });
+
+    test('value should be local data after error', () async {
+      stringLoader.shouldThrowError = true;
+      await stringLoader.initialize();
+      expect(stringLoader.value, equals('initial local data'));
+    });
+
+    test('value should be local data after error and refresh', () async {
+      stringLoader.shouldThrowError = true;
+      await stringLoader.initialize();
+      await stringLoader.refresh();
+      expect(stringLoader.value, equals('initial local data'));
+    });
+
+    test('value should be remote data after error and refresh', () async {
+      await stringLoader.initialize();
+      stringLoader.shouldThrowError = true;
+      await stringLoader.refresh();
+      expect(stringLoader.value, equals('remote data 1'));
     });
   });
 }
