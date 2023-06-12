@@ -216,21 +216,20 @@ class MockStaleMateLoader<T> extends _i1.Mock
         returnValueForMissingStub: _i2.Future<void>.value(),
       ) as _i2.Future<void>);
   @override
-  _i2.Future<_i3.StaleMateRefreshResult<dynamic>> refresh() =>
-      (super.noSuchMethod(
+  _i2.Future<_i3.StaleMateRefreshResult<T>> refresh() => (super.noSuchMethod(
         Invocation.method(
           #refresh,
           [],
         ),
-        returnValue: _i2.Future<_i3.StaleMateRefreshResult<dynamic>>.value(
-            _FakeStaleMateRefreshResult_2<dynamic>(
+        returnValue: _i2.Future<_i3.StaleMateRefreshResult<T>>.value(
+            _FakeStaleMateRefreshResult_2<T>(
           this,
           Invocation.method(
             #refresh,
             [],
           ),
         )),
-      ) as _i2.Future<_i3.StaleMateRefreshResult<dynamic>>);
+      ) as _i2.Future<_i3.StaleMateRefreshResult<T>>);
   @override
   _i2.Future<void> reset() => (super.noSuchMethod(
         Invocation.method(

@@ -17,13 +17,25 @@ class StaleMateLoaderImpl2 extends StaleMateLoader<int> {
 
 @GenerateMocks([StaleMateLoaderImpl1, StaleMateLoaderImpl2])
 void main() {
-  final mockRefreshSuccessResult = StaleMateRefreshResult.success(
-    data: true,
+  final mockRefreshSuccessResult = StaleMateRefreshResult<String>.success(
+    data: "refreshed data",
     refreshInitiatedAt: DateTime.now(),
     refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
   );
 
-  final mockRefreshFailureResult = StaleMateRefreshResult.failure(
+  final mockRefreshFailureResult = StaleMateRefreshResult<String>.failure(
+    error: Exception('Refresh failed'),
+    refreshInitiatedAt: DateTime.now(),
+    refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
+  );
+
+  final mockRefreshIntResult = StaleMateRefreshResult<int>.success(
+    data: 1,
+    refreshInitiatedAt: DateTime.now(),
+    refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
+  );
+
+  final mockRefreshFailureIntResult = StaleMateRefreshResult<int>.failure(
     error: Exception('Refresh failed'),
     refreshInitiatedAt: DateTime.now(),
     refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
@@ -91,7 +103,7 @@ void main() {
       when(loader2.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
       when(loader3.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+          .thenAnswer((_) => Future.value(mockRefreshIntResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
@@ -119,7 +131,7 @@ void main() {
       when(loader2.refresh())
           .thenAnswer((_) => Future.value(mockRefreshFailureResult));
       when(loader3.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+          .thenAnswer((_) => Future.value(mockRefreshIntResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
@@ -147,7 +159,7 @@ void main() {
       when(loader2.refresh())
           .thenAnswer((_) => Future.value(mockRefreshFailureResult));
       when(loader3.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshFailureResult));
+          .thenAnswer((_) => Future.value(mockRefreshFailureIntResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
@@ -212,7 +224,7 @@ void main() {
       when(loader2.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
       when(loader3.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+          .thenAnswer((_) => Future.value(mockRefreshIntResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
@@ -313,13 +325,13 @@ void main() {
       final loader4 = MockStaleMateLoaderImpl2();
 
       when(loader1.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+          .thenAnswer((_) => Future.value(mockRefreshIntResult));
       when(loader2.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
       when(loader3.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
       when(loader4.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
+          .thenAnswer((_) => Future.value(mockRefreshIntResult));
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);

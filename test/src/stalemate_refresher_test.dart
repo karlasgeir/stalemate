@@ -17,13 +17,13 @@ void main() {
   late MockStaleMateLoader<bool> mockDataLoader;
   late StalePeriodRefreshConfig refreshConfig;
   late MockClock clock;
-  final mockRefreshSuccessResult = StaleMateRefreshResult.success(
+  final mockRefreshSuccessResult = StaleMateRefreshResult<bool>.success(
     data: true,
     refreshInitiatedAt: DateTime.now(),
     refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),
   );
 
-  final mockRefreshFailureResult = StaleMateRefreshResult.failure(
+  final mockRefreshFailureResult = StaleMateRefreshResult<bool>.failure(
     error: Exception('Refresh failed'),
     refreshInitiatedAt: DateTime.now(),
     refreshFinishedAt: DateTime.now().add(const Duration(milliseconds: 100)),

@@ -122,21 +122,21 @@ class MockStaleMateLoaderImpl1 extends _i1.Mock
         returnValueForMissingStub: _i4.Future<void>.value(),
       ) as _i4.Future<void>);
   @override
-  _i4.Future<_i2.StaleMateRefreshResult<dynamic>> refresh() =>
+  _i4.Future<_i2.StaleMateRefreshResult<String>> refresh() =>
       (super.noSuchMethod(
         Invocation.method(
           #refresh,
           [],
         ),
-        returnValue: _i4.Future<_i2.StaleMateRefreshResult<dynamic>>.value(
-            _FakeStaleMateRefreshResult_0<dynamic>(
+        returnValue: _i4.Future<_i2.StaleMateRefreshResult<String>>.value(
+            _FakeStaleMateRefreshResult_0<String>(
           this,
           Invocation.method(
             #refresh,
             [],
           ),
         )),
-      ) as _i4.Future<_i2.StaleMateRefreshResult<dynamic>>);
+      ) as _i4.Future<_i2.StaleMateRefreshResult<String>>);
   @override
   _i4.Future<void> reset() => (super.noSuchMethod(
         Invocation.method(
@@ -235,21 +235,20 @@ class MockStaleMateLoaderImpl2 extends _i1.Mock
         returnValueForMissingStub: _i4.Future<void>.value(),
       ) as _i4.Future<void>);
   @override
-  _i4.Future<_i2.StaleMateRefreshResult<dynamic>> refresh() =>
-      (super.noSuchMethod(
+  _i4.Future<_i2.StaleMateRefreshResult<int>> refresh() => (super.noSuchMethod(
         Invocation.method(
           #refresh,
           [],
         ),
-        returnValue: _i4.Future<_i2.StaleMateRefreshResult<dynamic>>.value(
-            _FakeStaleMateRefreshResult_0<dynamic>(
+        returnValue: _i4.Future<_i2.StaleMateRefreshResult<int>>.value(
+            _FakeStaleMateRefreshResult_0<int>(
           this,
           Invocation.method(
             #refresh,
             [],
           ),
         )),
-      ) as _i4.Future<_i2.StaleMateRefreshResult<dynamic>>);
+      ) as _i4.Future<_i2.StaleMateRefreshResult<int>>);
   @override
   _i4.Future<void> reset() => (super.noSuchMethod(
         Invocation.method(
