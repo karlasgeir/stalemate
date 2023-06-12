@@ -62,11 +62,11 @@ class StaleMateRefreshResult<T> {
   /// Utility method to handle the result of a refresh operation
   /// calls [success] with the refreshed data if the refresh was successful
   /// calls [failure] with the error if the refresh failed
-  on(
-    Function(T data) success, {
+  on({
+    Function(T data)? success,
     Function(Object error)? failure,
   }) {
-    if (isSuccess) {
+    if (isSuccess && success != null) {
       return success(requireData);
     }
     if (isFailure && failure != null) {
