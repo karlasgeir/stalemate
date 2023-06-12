@@ -1,4 +1,4 @@
-import 'package:example/pages/initialization_refresh/widgets/simple_stale_mate_loader.dart';
+import 'package:example/pages/initialization_refresh/loaders/simple_stale_mate_loader.dart';
 import 'package:example/pages/initialization_refresh/widgets/initialization_refresh_emty_state.dart';
 import 'package:example/pages/initialization_refresh/widgets/initialization_refresh_error_state.dart';
 import 'package:example/widgets/base_app_page.dart';
