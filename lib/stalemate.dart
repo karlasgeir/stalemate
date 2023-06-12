@@ -7,6 +7,7 @@ import 'src/stalemate_registry/stalemate_registry.dart';
 
 export 'src/stalemate_loader/stalemate_loader.dart';
 export 'src/stalemate_refresher/stalemate_refresh_config.dart';
+export 'src/stalemate_refresher/stalemate_refresh_result.dart';
 export 'src/stalemate_builder/stalemate_builder.dart';
 
 /// Public API for StaleMate.
