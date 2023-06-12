@@ -73,11 +73,11 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
   /// If the data is already being refreshed, this will return a [StaleMateRefreshResult.alreadyRefreshing]
   /// If the data was refreshed successfully, this will return a [StaleMateRefreshResult.success] with the refreshed data
   /// If the data failed to refresh, this will return a [StaleMateRefreshResult.failure] with the error that occurred
-  Future<StaleMateRefreshResult> refresh() async {
+  Future<StaleMateRefreshResult<T>> refresh() async {
     final refreshInitiatedAt = _clock.now();
     // Guard against multiple simultaneous refreshes
     if (isRefreshing) {
-      return StaleMateRefreshResult.alreadyRefreshing(
+      return StaleMateRefreshResult<T>.alreadyRefreshing(
         refreshInitiatedAt: refreshInitiatedAt,
         refreshFinishedAt: _clock.now(),
       );
@@ -87,25 +87,25 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
 
     try {
       final refreshedData = await _onRefresh();
-      
+
       _lastRefresh = _clock.now();
       _scheduleNextRefresh();
       isRefreshing = false;
 
-      return StaleMateRefreshResult.success(
+      return StaleMateRefreshResult<T>.success(
         data: refreshedData,
         refreshInitiatedAt: refreshInitiatedAt,
         refreshFinishedAt: _clock.now(),
       );
     } catch (error) {
-       // Since the refresh timer will be scheduled based on the last refresh time,
+      // Since the refresh timer will be scheduled based on the last refresh time,
       // we need to update the last refresh time before scheduling the next refresh
       // even if the refresh failed
       _lastRefresh = _clock.now();
       _scheduleNextRefresh();
       isRefreshing = false;
-      
-      return StaleMateRefreshResult.failure(
+
+      return StaleMateRefreshResult<T>.failure(
         error: error,
         refreshInitiatedAt: refreshInitiatedAt,
         refreshFinishedAt: _clock.now(),

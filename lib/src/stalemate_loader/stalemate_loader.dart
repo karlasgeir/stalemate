@@ -51,7 +51,7 @@ abstract class StaleMateLoader<T> {
   late final BehaviorSubject<T> _subject;
 
   /// The refresher that will be used to refresh the data
-  late final StaleMateRefresher _refresher;
+  late final StaleMateRefresher<T> _refresher;
 
   /// Default constructor
   StaleMateLoader({
@@ -154,7 +154,7 @@ abstract class StaleMateLoader<T> {
   /// The refresh result is returned in case you want to handle it
   /// For example, to indicate to the user if the refresh succeeded or not
   /// or to show a message to the user if the refresh failed
-  Future<StaleMateRefreshResult> refresh() async {
+  Future<StaleMateRefreshResult<T>> refresh() async {
     return _refresher.refresh();
   }
 
