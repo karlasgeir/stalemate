@@ -161,8 +161,8 @@ The most straightforward way to display data is to use the **StaleMateBuilder** 
     return StaleMateBuilder(
       loader: _todosLoader,
       builder: (context, data) {
-        // When is a utility class that you can use to
-        // render differnet widgets based on the state of the data
+        // when is a utility class that you can use to
+        // render different widgets based on the state of the data
         return data.when(
             // When initialize has not been called
             // or we are waiting for the initial data
@@ -184,7 +184,7 @@ The most straightforward way to display data is to use the **StaleMateBuilder** 
                 },
             ),
             // When the loader has an error
-            // The loader will show data instead of
+            // The loader will show data instead of error
             // depending on the showLocalDataOnError parameter
             error: (error) => Center(
                 child: Text(error.toString()),
@@ -415,7 +415,7 @@ Here's an example of how you can interact with the StaleMate registry:
 logoutUser() async {
     // do other logout logic
 
-    // Reset all StaleMate users so a new user has no "hanging data"
+    // Reset all StaleMate loaders so a new user has no "hanging data"
     await StaleMate.resetAllLoaders();
 }
 
@@ -432,8 +432,8 @@ List<ToDo> getTodosFromFirstTodoLoader() {
 
 # Final thoughts
 
-We hope that this documentation helps you understand how to effectively use the StaleMate library in your Dart applications. The aim of this library is to simplify and optimize your stale data management processes and refresh strategies.
+We hope that this documentation helps you understand how to effectively use the StaleMate library in your Flutter applications. The aim of this library is to simplify and optimize your data management and refresh strategies.
 
-If you encounter any problems or have suggestions for future features, please create an issue in our GitHub repository. We appreciate your feedback and will do our best to improve StaleMate based on your needs and experiences.
+If you encounter any problems or have suggestions for future features, please [create an issue](https://github.com/karlasgeir/stalemate/issues) in our GitHub repository. We appreciate your feedback and will do our best to improve StaleMate based on your needs and experiences.
 
-Remember, StaleMate is designed to be flexible and adaptable to your needs, so we encourage you to experiment and find the configurations and strategies that work best for your unique context.
+Remember, StaleMate is designed to be flexible and adaptable to your needs, so we encourage you to experiment and find the configurations and strategies that work best for your the unique context of your application.
