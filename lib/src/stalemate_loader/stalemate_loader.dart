@@ -73,7 +73,10 @@ abstract class StaleMateLoader<T> {
   Stream<T> get stream => _subject.stream;
 
   /// Returns the current value of the stream
-  T get value => _subject.value;
+  /// If the stream is empty, the [emptyValue] will be returned
+  T get value => _subject.valueOrNull ?? emptyValue;
+
+  bool get isEmpty => value == emptyValue;
 
   /// Default implementation, override if local data is needed
   Future<T> getLocalData() async {
@@ -129,7 +132,7 @@ abstract class StaleMateLoader<T> {
     } catch (error) {
       if (!showLocalDataOnError) {
         _addError(error);
-      } else if (!_subject.hasValue || value == emptyValue) {
+      } else if (isEmpty) {
         _addError(error);
       }
 
@@ -140,7 +143,7 @@ abstract class StaleMateLoader<T> {
   /// Loads local data first, then remote data
   Future<void> initialize() async {
     await _loadLocalData();
-    if (updateOnInit || !_subject.hasValue || value == emptyValue) {
+    if (updateOnInit || isEmpty) {
       await _refresher.refresh();
     }
   }
