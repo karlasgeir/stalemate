@@ -1,4 +1,4 @@
-**StaleMate** is a data synchronization library for Flutter applications. Its primary purpose is to simplify the process of keeping remote and local data in sync while offering a flexible and agnostic approach to data storage and retrieval. With StaleMate, you are free to utilize any data storage or fetching method that suits your needs, be it Hive, Isar, secure storage, shared preferences, or any HTTP client for remote data retrieval.
+**StaleMate** is a data synchronization library for Flutter applications. Its primary purpose is to simplify the process of keeping remote and local data in sync while offering a flexible and agnostic approach to data storage and retrieval. With StaleMate, you are free to utilize any data storage or fetching method that suits your needs, be it **Hive**, **Isar**, **secure storage**, **shared preferences**, or any **HTTP client** for remote data retrieval.
 
 # Key Features
 
@@ -18,6 +18,12 @@ StaleMate provides two mechanisms to automatically synchronize your data:
 StaleMate respects the lifecycle of your app: no updates occur while your app is in the background. Nevertheless, if the data is identified as stale upon the resumption of your app, StaleMate will promptly fetch the new data. This ensures the immediate availability of the most current data for your users.
 
 > It's important to note that even with these automatic refresh strategies in place, you retain the ability to manually refresh your loader at any given time.
+
+## Pagination Support
+
+StaleMate provides a **StaleMatePaginatedLoader** that extends the core functionality of the **StaleMateLoader** with pagination support. This feature enables you to manage large data sets with ease by fetching data in manageable 'pages'.
+
+The StaleMatePaginatedLoader is designed for versatility, supporting three common pagination strategies out of the box: page-based, offset/limit-based, and cursor-based pagination. Moreover, if these strategies do not meet your needs, StaleMate provides the flexibility to implement custom pagination configurations by extending the base PaginationConfig class.
 
 ## State Management Agnostic
 
@@ -58,8 +64,8 @@ Here's an example of a simple ToDo loader implementation:
 
 ```dart
 class TodosLoader extends StaleMateLoader<List<ToDo>> {
-  // This is the remote datasource that will be used to fetch data from the
-  // remote server.
+ // These are the remote and local data sources that will be used
+  // to fetch data from the remote server and store data locally, respectively.
   final TodoRemoteDatasource remoteDataSource;
   // This is the local datasource that will be used to store data locally.
   final TodoLocalDatasource localDataSource;
@@ -375,6 +381,207 @@ class StalePeriodRefreshConfig extends StaleMateRefreshConfig {
   @override
   Duration getNextRefreshDelay(DateTime lastRefreshTime) {
     return stalePeriod - DateTime.now().difference(lastRefreshTime);
+  }
+}
+```
+
+## StaleMate Paginated Loader
+
+StaleMate library offers a StaleMatePaginatedLoader component which extends the base functionality of StaleMateLoader. It provides the additional benefit of easy data fetching in a paginated manner. Just like with StaleMateLoader, you can cache the local data. However, instead of overwriting the getRemoteData method, StaleMatePaginatedLoader requires you to overwrite the getRemotePaginatedData method instead. **Please don't overwrite the getRemoteData method**.
+
+The StaleMatePaginatedLoader is especially useful in scenarios where your application deals with large datasets that cannot (or should not) be loaded all at once due to memory and performance considerations. Instead of loading the entire data, the StaleMatePaginatedLoader allows for a smooth, seamless experience by loading data in small, manageable chunks (or 'pages').
+
+Here's an example of how to implement it:
+
+```dart
+/// A loader that handles the pagination logic for you
+class PaginatedTodosLoader extends StaleMatePaginatedLoader<ToDo> {
+  // These are the remote and local data sources that will be used
+  // to fetch data from the remote server and store data locally, respectively.
+  final TodoRemoteDatasource remoteDataSource;
+  // This is the local datasource that will be used to store data locally.
+  final TodoLocalDatasource localDataSource;
+
+  PaginatedTodosLoader({
+    required this.remoteDataSource,
+    required this.localDataSource,
+  }) : super(
+    // StaleMatePaginatedLoader supports the same properties as the StaleMateLoader
+    // except emptyValue, it is always an empty list since the paginated loader
+    // only supports lists of data.
+    updateOnInit: true,
+    showLocalDataOnError: true,
+    refreshConfig: null,
+    // You'll need to provide a pagination config, which defines how
+    // you are going to paginate the data. StaleMate comes with built-in
+    // configurations for common use cases: StaleMatePagePagination,
+    // StaleMateOffsetLimitPagination, and StaleMateCursorPagination.
+    // For custom configurations, you can overwrite StaleMatePaginationConfig.
+    // This example uses StaleMatePagePagination.
+    paginationConfig: StaleMatePagePagination(
+        pageSize: 10,
+        // Indicates whether pages start counting from zero or one.
+        // false (pages start from 1) by default
+        zeroBasedIndexing: false,
+    )
+  )
+
+  @override
+  Future<List<String>> getRemotePaginatedData(
+    Map<String, dynamic> paginationParams,
+  ) async {
+    final page = paginationParams['page'] as int;
+    final pageSize = paginationParams['pageSize'] as int;
+    return _remoteDatasource.getPagePaginatedItems(page, pageSize);
+  }
+
+  // If you want to store the data locally, you can
+  // overwrite the methods for getLocalData, storeLocalData
+  // and removeLocalData just as shown in the StaleMateLoader example
+}
+```
+
+> Note: For detailed information about the updateOnInit, showLocalDataOnError and refreshConfig, refer to the StaleMateLoader documentation
+> Note: Calling refresh on a paginated loader resets the pagination and only fetches the first page again.
+
+### Pagination usage
+
+You can use the paginated loader in the same way as the normal **StaleMateLoader**. The key difference is the ability to call **fetchMore** on the paginated loader, which loads the next page of data. When you call **fetchMore**, much like when you call refresh, you'll receive a **StaleMateFetchMoreResult** object. This object indicates the status of the fetch more call, any data retrieved, errors if they occurred, and information about whether there is more data to fetch. Here is an example:
+
+```dart
+// Call fetch more on the loader to fetch more
+final fetchMoreResult = await _todosLoader.fetchMore();
+
+if (fetchMoreResult.hasData) {
+     // The new data that you just fetched from the server
+    final newData = fetchMoreResult.requireNewData;
+    // The new data merged with the data that you already had
+    final mergedData = fetchMoreResult.require
+}
+
+// You can manually decide which states to handle to update the UI
+if (fetchMoreResult.isDone) {
+    // No more items to fetch, change app state to stop fetching more
+}
+else if (fetchMoreResult.moreDataAvailable) {
+    // Fetch was successful and the server has more data waiting for you
+}
+else if (fetchMoreResult.isFailure) {
+    // The error that occurred while fetching more data
+    final error = fetchMoreResult.requireError
+}
+else if (fetchMoreResult.isAlreadyFetching) {
+    // Fetch more was called while fetch more was in progress
+    // The loader just ignores it, you cannot do two simultaneous
+    // fetch more requests
+}
+
+// There is also a utility function to handle success and failure
+fetchMoreResult.on(
+    success: (mergedData, newData, isDone) {
+        if (isDone) {
+            // 'Fetched more data successfully, received ${newData.length} items. The total amount of items is now ${mergedData.length}. There is no more data to fetch',
+        } else {
+            // 'Fetched more data successfully, received ${newData.length} items. The total amount of items is now ${mergedData.length}',
+        }
+    },
+    failure: (error) {
+        //  'Failed to fetch more data with error: $error',
+    },
+);
+```
+
+### StaleMatePagePagination
+
+The **StaleMatePagePagination** configuration enables page-based pagination in the paginated loader. Here's an example of its usage:
+
+```dart
+// Pass this configuration to your paginated loader
+StaleMatePagePagination(
+    // Specify the number of items to fetch per page
+    pageSize: 10,
+    // Indicates whether pages start counting from zero or one.
+    // true: First page is page number 0
+    // false (default): First page is page number 1
+    zeroBasedIndexing: false,
+)
+```
+
+### StaleMateOffsetLimitPagination
+
+The **StaleMateOffsetLimitPagination** configuration enables simple offset/limit-based pagination in the loader. Here's an example of its usage:
+
+```dart
+// Pass this configuration to your paginated loader
+StaleMateOffsetLimitPagination(
+    // Define the number of items returned by each request
+    limit: 10,
+)
+```
+
+> Note: Some APIs use skip/limit or similar parameters for pagination. In such cases, you can still use the **OffsetLimit** pagination and adjust your API call parameters in the overwritten getRemotePaginatedData method in your loader.
+
+### StaleMateCursorPagination
+
+The **StaleMateCursorPagination** configuration enables cursor-based pagination in the loader. Here's an example of its usage:
+
+```dart
+// Pass this configuration to your paginated loader
+// Be sure to add the correct type so that the getCursor callback
+// can provide an item of the appropriate type
+StaleMateCursorPagination<ToDo>(
+    // Specify the number of items returned per request
+    limit: 10,
+    // Define how to retrieve the cursor for each item
+    // This is often the item's ID, but it can also be a timestamp
+    // For the first request, the cursor is null and the
+    // getCursor method is not called
+    getCursor: (ToDo lastItem) => lastItem.id,
+)
+```
+
+### Advanced pagination
+
+For custom pagination needs, you can extend the **StaleMatePaginationConfig<T>** and implement the **getQueryParams** method. Optionally, you can also override the **onReceivedData** method to create your own data merging function or to define when the loader has finished fetching data. If you don't override **onReceivedData** and set the **canFetchMore** parameter to false when it's appropriate, the **isDone** functionality of the **StaleMateFetchMoreResult** won't work. Here's an example of how **StaleMateCursorPagination** is implemented:
+
+```dart
+class StaleMateCursorPagination<T> extends StaleMatePaginationConfig<T> {
+  /// The number of items per page
+  final int limit;
+
+  /// The function to retrieve the cursor for the next page
+  /// The cursor is a string that can be used to fetch the next page of data,
+  /// it is usually an id or a timestamp
+  final String Function(T lastItem) getCursor;
+
+  StaleMateCursorPagination({
+    required this.limit,
+    required this.getCursor,
+  });
+
+  @override
+  Map<String, dynamic> getQueryParams(int numberOfItems, T? lastItem) {
+    return {
+      // Retrieve the cursor for the next page
+      // This needs to be implemented by the user since
+      // the cursor is usually an id or a timestamp, depending on the data
+      'cursor': lastItem != null ? getCursor(lastItem) : null,
+      'limit': limit,
+    };
+  }
+
+  @override
+  List<T> onReceivedData(List<T> newData, List<T> oldData) {
+    // If the number of items received is less than the limit,
+    // there are no more items to fetch.
+    canFetchMore = newData.length == limit;
+
+    // The default implementation simply returns a combination of old and new data
+    // i.e., [...oldData, ...newData]
+    return super.onReceivedData(newData, oldData);
+
+    // Instead of returning the default implementation, you could implement your own merge
+    // function here
   }
 }
 ```
