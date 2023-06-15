@@ -9,6 +9,8 @@ export 'src/stalemate_loader/stalemate_loader.dart';
 export 'src/stalemate_refresher/stalemate_refresh_config.dart';
 export 'src/stalemate_refresher/stalemate_refresh_result.dart';
 export 'src/stalemate_builder/stalemate_builder.dart';
+export 'src/stalemate_paginated_loader/stalemate_pagination_config.dart';
+export 'src/stalemate_paginated_loader/stale_mate_fetch_more_result.dart';
 
 /// Public API for StaleMate.
 /// This class is used to perform operations on all loaders or loaders of a specific type

@@ -1,9 +1,13 @@
 import 'package:rxdart/subjects.dart';
 import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
 
+import '../stalemate_paginated_loader/stale_mate_fetch_more_result.dart';
 import '../stalemate_refresher/stalemate_refresh_config.dart';
 import '../stalemate_refresher/stalemate_refresher.dart';
 import '../stalemate_registry/stalemate_registry.dart';
+import '../stalemate_paginated_loader/stalemate_pagination_config.dart';
+
+part '../stalemate_paginated_loader/stalemate_paginated_loader.dart';
 
 /// A class that handles the loading of data from local and remote sources
 /// --------------------------------------------------------------------------------
@@ -111,12 +115,23 @@ abstract class StaleMateLoader<T> {
     }
   }
 
+  void _onRemoteDataError(Object error) {
+    if (!showLocalDataOnError) {
+      _addError(error);
+    } else if (isEmpty) {
+      _addError(error);
+    }
+  }
+
   /// Loads local data and adds it to the stream
   Future<bool> _loadLocalData() async {
     try {
       final localData = await getLocalData();
-      _subject.add(localData);
-      return localData != emptyValue;
+      if (localData != emptyValue) {
+        _subject.add(localData);
+        return true;
+      }
+      return false;
     } catch (e) {
       return false;
       // Do nothing, we'll try to get remote data
@@ -130,11 +145,7 @@ abstract class StaleMateLoader<T> {
       await addData(remoteData);
       return remoteData;
     } catch (error) {
-      if (!showLocalDataOnError) {
-        _addError(error);
-      } else if (isEmpty) {
-        _addError(error);
-      }
+      _onRemoteDataError(error);
 
       rethrow;
     }

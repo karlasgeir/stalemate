@@ -15,6 +15,10 @@ class HomePage extends StatelessWidget {
             title: 'Initialization and Refresh',
             path: '/initialization_refresh',
           ),
+          HomePageListItem(
+            title: 'Paginated Loader',
+            path: 'paginated_loader',
+          ),
         ],
       ),
     );
