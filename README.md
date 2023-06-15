@@ -387,7 +387,7 @@ class StalePeriodRefreshConfig extends StaleMateRefreshConfig {
 
 ## StaleMate Paginated Loader
 
-StaleMate library offers a StaleMatePaginatedLoader component which extends the base functionality of StaleMateLoader. It provides the additional benefit of easy data fetching in a paginated manner. Just like with StaleMateLoader, you can cache the local data. However, instead of overwriting the getRemoteData method, StaleMatePaginatedLoader requires you to overwrite the getRemotePaginatedData method instead. **Please don't overwrite the getRemoteData method**.
+StaleMate offers a StaleMatePaginatedLoader which extends the base functionality of StaleMateLoader. It provides the additional benefit of easy data fetching in a paginated manner. The creation of a StaleMatePaginatedLoader is almost identical to creating a StaleMateLoader, except, instead of overwriting the getRemoteData method, StaleMatePaginatedLoader requires you to overwrite the getRemotePaginatedData method instead and provide a pagination config. **Please don't overwrite the getRemoteData method**.
 
 The StaleMatePaginatedLoader is especially useful in scenarios where your application deals with large datasets that cannot (or should not) be loaded all at once due to memory and performance considerations. Instead of loading the entire data, the StaleMatePaginatedLoader allows for a smooth, seamless experience by loading data in small, manageable chunks (or 'pages').
 
