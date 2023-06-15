@@ -1,3 +1,5 @@
+<a href="https://github.com/karlasgeir/stalemate/actions"><img src="https://github.com/karlasgeir/stalemate/workflows/test-stalemate/badge.svg" alt="Build Status"></a>
+
 **StaleMate** is a data synchronization library for Flutter applications. Its primary purpose is to simplify the process of keeping remote and local data in sync while offering a flexible and agnostic approach to data storage and retrieval. With StaleMate, you are free to utilize any data storage or fetching method that suits your needs, be it **Hive**, **Isar**, **secure storage**, **shared preferences**, or any **HTTP client** for remote data retrieval.
 
 # Key Features
