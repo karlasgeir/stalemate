@@ -5,6 +5,7 @@ import 'package:example/widgets/base_app_page.dart';
 import 'package:flutter/material.dart';
 import 'package:stalemate/stalemate.dart';
 
+import '../../services/snack_bar_service.dart';
 import 'widgets/initialization_refresh_data_state.dart';
 import 'widgets/initialization_refresh_loading_state.dart';
 
@@ -55,14 +56,6 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     });
   }
 
-  showSnackBar(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-      ),
-    );
-  }
-
   performRefresh() async {
     // The refresh method can be awaited to know when the loader has finished
     // refreshing the data
@@ -72,10 +65,14 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     // the result of the refresh operation
     (await loader.refresh()).on(
       success: (data) {
-        showSnackBar('Refreshed data successfully: $data');
+        SnackBarService.of(context).show(
+          'Refreshed data successfully: $data',
+        );
       },
       failure: (error) {
-        showSnackBar('Failed to refresh data with error: $error');
+        SnackBarService.of(context).show(
+          'Failed to refresh data with error: $error',
+        );
       },
     );
   }
