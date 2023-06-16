@@ -162,7 +162,7 @@ class StaleMateFetchMoreResult<T> {
     }
   }
 
-  /// Factory method to create a [StaleMateFetchMoreResult] with [StaleMateFetchMoreStatus.alreadyFetching]  
+  /// Factory method to create a [StaleMateFetchMoreResult] with [StaleMateFetchMoreStatus.alreadyFetching]
   factory StaleMateFetchMoreResult.alreadyFetching() {
     return StaleMateFetchMoreResult(
       status: StaleMateFetchMoreStatus.alreadyFetching,
@@ -186,8 +186,37 @@ class StaleMateFetchMoreResult<T> {
     );
   }
 
-  
+  // Factory method to create a [StaleMateFetchMoreResult] with [StaleMateFetchMoreStatus.done]
+  factory StaleMateFetchMoreResult.done({
+    required DateTime fetchMoreInitiatedAt,
+    required Map<String, dynamic> queryParams,
+    required List<T> newData,
+    required List<T> mergedData,
+  }) {
+    return StaleMateFetchMoreResult(
+      status: StaleMateFetchMoreStatus.done,
+      fetchMoreInitiatedAt: fetchMoreInitiatedAt,
+      fetchMoreFinishedAt: DateTime.now(),
+      fetchMoreParameters: queryParams,
+      newData: newData,
+      mergedData: mergedData,
+    );
+  }
 
+  /// Factory method to create a [StaleMateFetchMoreResult] with [StaleMateFetchMoreStatus.failure]
+  factory StaleMateFetchMoreResult.failure({
+    required DateTime fetchMoreInitiatedAt,
+    required Map<String, dynamic> queryParams,
+    required Object error,
+  }) {
+    return StaleMateFetchMoreResult(
+      status: StaleMateFetchMoreStatus.failure,
+      fetchMoreInitiatedAt: fetchMoreInitiatedAt,
+      fetchMoreFinishedAt: DateTime.now(),
+      fetchMoreParameters: queryParams,
+      error: error,
+    );
+  }
 
   @override
   String toString() {

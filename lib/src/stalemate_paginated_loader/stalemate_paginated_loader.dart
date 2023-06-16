@@ -43,11 +43,11 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   /// The [StaleMateFetchMoreResult] will contain the error if fetch more fails
   /// There is no need to use the data returned from this method, the data will be added to the stream automatically
   /// The data is there for your convinience if you want to do something with it, show how many items were added etc
-  Future<StaleMateFetchMoreResult> fetchMore() async {
+  Future<StaleMateFetchMoreResult<T>> fetchMore() async {
     if (paginationConfig.canFetchMore) {
       // If fetch more is already in progress, return already refreshing
       if (isFetchingMore) {
-        return StaleMateFetchMoreResult.alreadyFetching();
+        return StaleMateFetchMoreResult<T>.alreadyFetching();
       }
 
       // Set is fetching more to true so that we don't call fetch more again
@@ -72,17 +72,20 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
         // Add the merged data to the stream
         addData(mergedData);
 
-        // The pagination config handles setting the can fetch more flag
-        // reflect it in the status
-        final status = paginationConfig.canFetchMore
-            ? StaleMateFetchMoreStatus.moreDataAvailable
-            : StaleMateFetchMoreStatus.done;
+        // If we can fetch more data, return more data available
+        if (paginationConfig.canFetchMore) {
+          return StaleMateFetchMoreResult<T>.moreDataAvailable(
+            fetchMoreInitiatedAt: fetchMoreInitiatedAt,
+            queryParams: queryParams,
+            newData: newData,
+            mergedData: mergedData,
+          );
+        }
 
-        return StaleMateFetchMoreResult(
-          status: status,
+        // If we can't fetch more data, return done
+        return StaleMateFetchMoreResult<T>.done(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
-          fetchMoreFinishedAt: DateTime.now(),
-          fetchMoreParameters: queryParams,
+          queryParams: queryParams,
           newData: newData,
           mergedData: mergedData,
         );
@@ -90,11 +93,10 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
         // Tell the base loader to handle the error appropritaly
         _onRemoteDataError(error);
 
-        return StaleMateFetchMoreResult(
-          status: StaleMateFetchMoreStatus.failure,
+        // Return failure
+        return StaleMateFetchMoreResult<T>.failure(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
-          fetchMoreFinishedAt: DateTime.now(),
-          fetchMoreParameters: queryParams,
+          queryParams: queryParams,
           error: error,
         );
       } finally {
@@ -108,11 +110,9 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
       // We have no new data since no fetch more was initiated, so we return an empty list
       // We also return the fetchMoreInitiatedAt and fetchMoreFinishedAt times since the user would
       // expect those values to be set when the status is done
-      return StaleMateFetchMoreResult(
-        status: StaleMateFetchMoreStatus.done,
+      return StaleMateFetchMoreResult<T>.done(
         fetchMoreInitiatedAt: DateTime.now(),
-        fetchMoreFinishedAt: DateTime.now(),
-        fetchMoreParameters: paginationConfig.getQueryParams(
+        queryParams: paginationConfig.getQueryParams(
           value.length,
           value.last,
         ),
