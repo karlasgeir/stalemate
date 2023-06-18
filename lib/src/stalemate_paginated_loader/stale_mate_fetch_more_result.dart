@@ -130,7 +130,8 @@ class StaleMateFetchMoreResult<T> {
   bool get isDone => status == StaleMateFetchMoreStatus.done;
 
   /// Fetch more successful and has data
-  /// It is safe to call [requireData] if this is true
+
+  /// It is safe to call [requireNewData] or [requireMergedData] if this is true
   bool get hasData => moreDataAvailable || isDone;
 
   /// The time when the fetch more was initiated

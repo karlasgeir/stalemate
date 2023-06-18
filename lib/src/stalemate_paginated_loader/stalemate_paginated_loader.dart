@@ -94,7 +94,7 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   /// Override this method to fetch the next page of data from the server based on the [paginationParams]
   ///
   /// The data returned from this method will be passed through the [StaleMatePaginationConfig.onReceivedData] method
-  /// which handles merging the data and setting the [canFetchMore] flag
+  /// which handles merging the data and setting the [StaleMatePaginationConfig.canFetchMore] flag
   ///
   /// Returns the page of data based on the [paginationParams]
   Future<List<T>> getRemotePaginatedData(Map<String, dynamic> paginationParams);
@@ -107,7 +107,7 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   /// and return the data returned from super
   /// This method is used to fetch the first page of data from the server
   /// The data returned from this method will be passed through the [StaleMatePaginationConfig.onReceivedData] method
-  /// which handles merging the data and setting the [canFetchMore] flag
+  /// which handles merging the data and setting the [StaleMatePaginationConfig.canFetchMore] flag
   ///
   /// Returns the first page of data
   @override
@@ -131,14 +131,14 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   /// This method is used to fetch the next page of data from the server
   ///
   /// The data returned from this method will be passed through the [StaleMatePaginationConfig.onReceivedData] method
-  /// which handles merging the data and setting the [canFetchMore] flag
+  /// which handles merging the data and setting the [StaleMatePaginationConfig.canFetchMore] flag
   ///
   /// Returns a [StaleMateFetchMoreResult] which can be used to handle the result of the fetch more operation
   /// The status of the fetch more operation can be checked using the [StaleMateFetchMoreResult.status] property
   /// - [StaleMateFetchMoreStatus.done] indicates that the fetch more was successful and there is no more data to fetch
   /// - [StaleMateFetchMoreStatus.moreDataAvailable] indicates that the fetch more was successful and there is more data to fetch
   /// - [StaleMateFetchMoreStatus.alreadyFetching] indicates that the fetch more is already in progress
-  /// - [StaleMateFetchMoreStatus.error] indicates that the fetch more failed with an error
+  /// - [StaleMateFetchMoreStatus.failure] indicates that the fetch more failed with an error
   ///
   /// Example:
   /// ```dart

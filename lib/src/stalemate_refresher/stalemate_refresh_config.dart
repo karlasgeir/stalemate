@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import 'stalemate_refresher.dart';
 import '../clock/clock.dart';
 
 /// Configures when the [StaleMateRefresher] should refresh data.

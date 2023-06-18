@@ -61,7 +61,7 @@ class StaleMateBuilder<T> extends StatelessWidget {
   }) : super(key: key);
 
   /// Returns the [StaleMateData] based on the state of the [snapshot]
-  /// provided by the [loader.stream]
+  /// provided by the [StaleMateLoader.stream]
   ///
   /// This method maps the state of the stream to the [StaleMateData] state
   StaleMateData<T> getData(AsyncSnapshot<T> snapshot) {
