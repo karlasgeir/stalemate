@@ -15,6 +15,7 @@ class PaginatedExampleLoader extends StaleMatePaginatedLoader<String> {
 
   PaginatedExampleLoader({
     required super.paginationConfig,
+    super.logLevel,
   });
 
   @override
