@@ -8,6 +8,12 @@ class TaggedLoggingPrinter extends PrettyPrinter {
   /// The tag to add to each log line.
   final String tag;
 
+  /// Creates a [TaggedLoggingPrinter].
+  ///
+  /// Arguments:
+  /// - **tag:** The tag to add to each log line.
+  ///
+  /// Other arguments are the same as [PrettyPrinter].
   TaggedLoggingPrinter({
     required this.tag,
     super.stackTraceBeginIndex,
@@ -22,6 +28,7 @@ class TaggedLoggingPrinter extends PrettyPrinter {
     super.excludePaths,
   });
 
+  /// Adds the [tag] to each log line.
   @override
   List<String> log(LogEvent event) {
     return super.log(event).map((line) => '[$tag] $line').toList();

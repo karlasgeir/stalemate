@@ -1,45 +1,75 @@
 import 'dart:async';
 
 import 'package:flutter/widgets.dart';
-import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
+
 import '../clock/clock.dart';
+import 'stalemate_refresh_result.dart';
 import 'stalemate_refresh_config.dart';
 
-/// This class handles refreshing data for [DataLoader]s.
-/// If a stale period is set, the data will be refreshed
-/// after the stale period has passed.
+/// Handles refreshing data for [StaleMateLoaders]s.
+///
 /// The class uses the [WidgetsBindingObserver] to listen for app lifecycle changes.
-/// If the app is resumed, the data will be refreshed when the stale period has passed.
-/// If the app is backgrounded, the refresh timer will be suspended
+/// On lifecyle change:
+/// - App resumed: If the data is stale, the data will be refreshed,
+///   otherwise the refresh timer will be scheduled to
+///   refresh the data when it becomes stale
+/// - App backgrounded: The refresh timer will be suspended until the app is resumed
+///
 class StaleMateRefresher<T> extends WidgetsBindingObserver {
-  /// The clock that will be used to determine the current time
-  /// This is exposed for testing purposes and defaults to [SystemClock]
-  late final Clock _clock;
+  /// A clock that can be used to determine the current time
+  ///
+  /// Defaults to [SystemClock], but can be overridden for testing
+  final Clock _clock;
 
-  /// The data loader that will be used to refresh the data
+  /// The function that will be called to refresh the data
+  ///
+  /// This function should return the refreshed data
   final Future<T> Function() _onRefresh;
 
-  /// The refresh config that decides when the data should be refreshed
+  /// The config that will be used to determine when to refresh the data
+  ///
   /// If this is null, the data will not be refreshed automatically
+  /// See also:
+  /// - [StalePeriodRefreshConfig]: Refreshes the data after a specified stale period
+  /// - [TimeOfDayRefreshConfig]: Refreshes the data at a specified time of day
   final StaleMateRefreshConfig? _refreshConfig;
 
   /// The time when the data was last refreshed
+  ///
+  /// This is used to determine if the data is stale
   late DateTime _lastRefresh;
 
   /// The timer that will be used to refresh the data
+  ///
+  /// Changes on app lifecycle changes:
+  /// - App resumed: If data is not stale, the timer will be
+  ///   scheduled to refresh the data when it becomes stale
+  /// - App backgrounded: The timer will be suspended
+  ///   until the app is resumed
   Timer? _refreshTimer;
 
   /// Whether the data is currently being refreshed
   bool isRefreshing = false;
 
+  /// Creates a new [StaleMateRefresher]
+  ///
+  /// Arguments:
+  /// - **onRefresh**: The function that will be called to refresh the data
+  /// - **refreshConfig**: The config that will be used to determine when to refresh the data,
+  ///   if this is null, the data will not be refreshed automatically
+  /// - **clock**: A clock that can be used to determine the current time,
+  ///   defaults to [SystemClock], but can be overridden for testing
   StaleMateRefresher({
     required Future<T> Function() onRefresh,
     StaleMateRefreshConfig? refreshConfig,
     Clock? clock,
   })  : _refreshConfig = refreshConfig,
-        _onRefresh = onRefresh {
-    _clock = clock ?? SystemClock();
+        _onRefresh = onRefresh,
+        _clock = clock ?? SystemClock() {
+    // Initialize the last refresh time to now
     _lastRefresh = _clock.now();
+
+    // Schedule the next refresh if the config is not null
     if (_refreshConfig != null) {
       _scheduleNextRefresh();
       WidgetsBinding.instance.addObserver(this);
@@ -50,6 +80,9 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
   bool get supportsAutoRefresh => _refreshConfig != null;
 
   /// Whether the data is stale
+  ///
+  /// Indicates that the data should be refreshed
+  /// Always false if the data loader does not support auto refresh
   bool get isStale =>
       supportsAutoRefresh && _refreshConfig!.isStale(_lastRefresh);
 
@@ -59,22 +92,33 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
 
     if (state == AppLifecycleState.resumed) {
       if (isStale) {
+        // Refresh immediately if the data is stale when the app resumes
         refresh();
       } else {
+        // Otherwise, schedule the next refresh
         _scheduleNextRefresh();
       }
     } else if (state == AppLifecycleState.paused) {
+      // Stop the refresh timer when the app is backgrounded
       _stopRefreshTimer();
     }
   }
 
-  /// Refreshes the data
-  /// This does not care if the data is stale or not, since the data loader always supports manual refresh
-  /// If the data is already being refreshed, this will return a [StaleMateRefreshResult.alreadyRefreshing]
-  /// If the data was refreshed successfully, this will return a [StaleMateRefreshResult.success] with the refreshed data
-  /// If the data failed to refresh, this will return a [StaleMateRefreshResult.failure] with the error that occurred
+  /// Refresh the data
+  ///
+  /// This will call the [_onRefresh] function and return the result
+  /// It doesn't matter if the data is stale or not,
+  /// the loader will always support manual refresh
+  ///
+  /// Returns a [StaleMateRefreshResult] that indicates the result of the refresh
+  /// Will never throw an error or return null, instead the error will be returned
+  /// in the [StaleMateRefreshResult] object
+  ///
+  /// See also:
+  /// - [StaleMateRefreshResult]
   Future<StaleMateRefreshResult<T>> refresh() async {
     final refreshInitiatedAt = _clock.now();
+
     // Guard against multiple simultaneous refreshes
     if (isRefreshing) {
       return StaleMateRefreshResult<T>.alreadyRefreshing(
@@ -89,9 +133,13 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
       final refreshedData = await _onRefresh();
 
       _lastRefresh = _clock.now();
+
+      // Schedule the next refresh
       _scheduleNextRefresh();
+
       isRefreshing = false;
 
+      // We got the data, so return a success result
       return StaleMateRefreshResult<T>.success(
         data: refreshedData,
         refreshInitiatedAt: refreshInitiatedAt,
@@ -114,6 +162,17 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
   }
 
   /// Schedules the next refresh
+  ///
+  /// This will cancel the current refresh timer and schedule a new one
+  /// based on the current time and the refresh config
+  ///
+  /// If the data is already stale, this will refresh the data immediately
+  ///
+  /// If the data loader doesn't support auto refresh, this will do nothing
+  ///
+  /// See also:
+  /// - [StaleMateRefreshConfig.getNextRefreshDelay]
+  /// - [StaleMateRefreshConfig.isStale]
   _scheduleNextRefresh() {
     _stopRefreshTimer();
 
