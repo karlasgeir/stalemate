@@ -84,6 +84,7 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
     super.updateOnInit,
     super.showLocalDataOnError,
     super.refreshConfig,
+    super.logLevel,
   }) : super(emptyValue: const []);
 
   /// This method is called when the loader needs to fetch the next page of data from the server
