@@ -220,6 +220,29 @@ class StaleMateFetchMoreResult<T> {
 
   @override
   String toString() {
-    return 'StaleMateFetchMoreResult(status: $status, fetchMoreInitiatedAt: $fetchMoreInitiatedAt, fetchMoreFinishedAt: $fetchMoreFinishedAt, fetchMoreParameters: $fetchMoreParameters, newData: $newData, mergedData: $mergedData, error: $error)';
+    final buffer = StringBuffer();
+    buffer.writeln('StaleMateFetchMoreResult(');
+    buffer.writeln('    status: $status,');
+    buffer.writeln('    fetchMoreInitiatedAt: $fetchMoreInitiatedAt,');
+    buffer.writeln('    fetchMoreFinishedAt: $fetchMoreFinishedAt,');
+    buffer.writeln('    fetchMoreParameters: $fetchMoreParameters,');
+    if (newData != null) {
+      buffer.writeln('    newData(count: ${newData!.length}): [');
+      for (final item in newData!) {
+        buffer.writeln('      $item,');
+      }
+      buffer.writeln('    ],');
+    }
+    if (mergedData != null) {
+      buffer.writeln('    mergedData(count: ${mergedData!.length}): [');
+      for (final item in mergedData!) {
+        buffer.writeln('      $item,');
+      }
+      buffer.writeln('    ],');
+    }
+    buffer.writeln('    error: $error,');
+    buffer.writeln('    fetchMoreDuration: $fetchMoreDuration,');
+    buffer.write(')');
+    return buffer.toString();
   }
 }

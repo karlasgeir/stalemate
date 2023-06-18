@@ -5,13 +5,17 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   /// The [StaleMatePaginationConfig] is used to provide the params for the next page of data
   /// The params will be received in the [getRemotePaginatedData] method
   final StaleMatePaginationConfig<T> paginationConfig;
+  
+  /// This flag is used to indicate if the loader is currently fetching more data
   bool isFetchingMore = false;
 
   StaleMatePaginatedLoader({
+    /// The pagination config that will be used to load the data
     required this.paginationConfig,
     super.updateOnInit,
     super.showLocalDataOnError,
     super.refreshConfig,
+    super.logLevel,
   }) : super(emptyValue: const []);
 
   /// Override this method in subclasses of [StaleMatePaginatedLoader]
@@ -31,10 +35,21 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
       null,
     );
 
+    _logger.i('Get remote data called, which will reset the pagination');
+    _logger.d('Resetting pagination with Query params: $queryParams');
+
     // The data returned from the server is passed through the [onReceivedData] method
     // which handles merging the data and setting the [canFetchMore] flag
     final data = await getRemotePaginatedData(queryParams);
-    return paginationConfig.onReceivedData(data, []);
+    final mergedData = paginationConfig.onReceivedData(data, []);
+    _logger.i(
+      'Received ${data.length} items from server, merged data is now ${mergedData.length}',
+    );
+    _logger.d('Data from server: ');
+    _logger.d(data);
+    _logger.d('Merged data: ');
+    _logger.d(mergedData);
+    return mergedData;
   }
 
   /// Call this method to fetch more data from the server
@@ -47,6 +62,7 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
     if (paginationConfig.canFetchMore) {
       // If fetch more is already in progress, return already refreshing
       if (isFetchingMore) {
+        _logger.i('Fetch more called, but it is already in progress');
         return StaleMateFetchMoreResult<T>.alreadyFetching();
       }
 
@@ -61,49 +77,70 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
         value.last,
       );
 
+      _logger.i('Fetch more called with query params: $queryParams');
+
       try {
         // Get the new data from the implemented getRemotePaginatedData method
         final newData = await getRemotePaginatedData(queryParams);
-
         // The data returned from the server is passed through the [onReceivedData] method
         // which handles merging the data and setting the [canFetchMore] flag
         final mergedData = paginationConfig.onReceivedData(newData, value);
+
+        _logger.i(
+            'Received ${newData.length} items from server, merged data is now ${mergedData.length}');
+        _logger.d('New data from server: ');
+        _logger.d(newData);
+        _logger.d('Merged data: ');
+        _logger.d(mergedData);
 
         // Add the merged data to the stream
         addData(mergedData);
 
         // If we can fetch more data, return more data available
         if (paginationConfig.canFetchMore) {
-          return StaleMateFetchMoreResult<T>.moreDataAvailable(
+          final result = StaleMateFetchMoreResult<T>.moreDataAvailable(
             fetchMoreInitiatedAt: fetchMoreInitiatedAt,
             queryParams: queryParams,
             newData: newData,
             mergedData: mergedData,
           );
+          _logger.i('More data available');
+          _logger.d('Fetch more result: ');
+          _logger.d(result);
+          return result;
         }
 
         // If we can't fetch more data, return done
-        return StaleMateFetchMoreResult<T>.done(
+        final result = StaleMateFetchMoreResult<T>.done(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
           queryParams: queryParams,
           newData: newData,
           mergedData: mergedData,
         );
-      } catch (error) {
+        _logger.i('No more data on server, done fetching more');
+        _logger.d('Fetch more result: ');
+        _logger.d(result);
+        return result;
+      } catch (error, stackTrace) {
         // Tell the base loader to handle the error appropritaly
         _onRemoteDataError(error);
 
         // Return failure
-        return StaleMateFetchMoreResult<T>.failure(
+        final result = StaleMateFetchMoreResult<T>.failure(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
           queryParams: queryParams,
           error: error,
         );
+        _logger.e('Fetch more failed', error, stackTrace);
+        _logger.d('Fetch more result: ');
+        _logger.d(result);
+        return result;
       } finally {
         // Set is fetching more to false so that we can call fetch more again
         isFetchingMore = false;
       }
     } else {
+      _logger.i('Fetch more called, but no more data available');
       // We were done fetching more data before this request
       // This can happen if the user calls fetch more after the last page of data has been fetched
       // We include the fetch more parameters and the merged data in the result

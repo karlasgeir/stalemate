@@ -1,5 +1,10 @@
+export '../logging/stalemate_log_level.dart';
+
+import 'package:logger/logger.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart';
+import '../logging/stalemate_log_level.dart';
+import '../logging/tagged_logging_printer.dart';
+import '../stalemate_refresher/stalemate_refresh_result.dart';
 
 import '../stalemate_paginated_loader/stale_mate_fetch_more_result.dart';
 import '../stalemate_refresher/stalemate_refresh_config.dart';
@@ -34,6 +39,9 @@ part '../stalemate_paginated_loader/stalemate_paginated_loader.dart';
 /// ----------------------------------------------------------------------------------
 ///
 abstract class StaleMateLoader<T> {
+  /// A logger that will be used to log errors and debug messages
+  late Logger _logger;
+
   /// The empty data that will be used to seed the stream
   /// For arrays this is usually an empty array, for strings an empty string,
   /// for nullable types this is usually null, etc.
@@ -59,16 +67,35 @@ abstract class StaleMateLoader<T> {
 
   /// Default constructor
   StaleMateLoader({
+    /// The empty value that will be used to seed the stream
+    /// For arrays this is usually an empty array, for strings an empty string,
+    /// for nullable types this is usually null, etc.
     required this.emptyValue,
+
+    /// Whether or not the data should be updated when the data loader is initialized
     this.updateOnInit = true,
+
+    /// Whether or not the local data should be shown when an error occurs
     this.showLocalDataOnError = true,
+
+    /// The refresh config that will be used to refresh the data
     StaleMateRefreshConfig? refreshConfig,
+
+    /// Log level that will be used for this data loader
+    /// Defaults to [StaleMateLogLevel.none]
+    StaleMateLogLevel? logLevel,
   }) {
+    setLogLevel(logLevel ?? StaleMateRegistry.instance.defaultLogLevel);
+
+    // Initialize the subject and the refresher
     _subject = BehaviorSubject();
+    // Initialize the refresher
     _refresher = StaleMateRefresher(
       refreshConfig: refreshConfig,
       onRefresh: _loadRemoteData,
     );
+
+    _logger.d('Registered in registry');
     // Register this data loader in the registry
     StaleMateRegistry.instance.register(this);
   }
@@ -103,48 +130,72 @@ abstract class StaleMateLoader<T> {
   }
 
   /// Adds an error to the stream
-  _addError(Object error) => _subject.addError(error);
+  _addError(Object error) {
+    _logger.d('Added error to stream', error, StackTrace.current);
+    _subject.addError(error);
+  }
 
   /// Adds data to the stream and stores it locally
   Future<void> addData(T data) async {
+    _logger.d('Added data of type ${data.runtimeType} to stream');
     _subject.add(data);
     try {
+      _logger.i('Storing local data of type ${data.runtimeType}...');
+      _logger.d('Local data to store:');
+      _logger.d(data);
       await storeLocalData(data);
-    } catch (error) {
-      // Do nothing, we don't want anything to break if we can't store the data in cache
+      _logger.d('Local data stored successfully');
+    } catch (error, stackTrace) {
+      _logger.e('Failed to store local data', error, stackTrace);
     }
   }
 
   void _onRemoteDataError(Object error) {
+    _logger.e('Failed to load remote data', error, StackTrace.current);
     if (!showLocalDataOnError) {
+      _logger.d('showLocalDataOnError is true, adding error to stream');
       _addError(error);
     } else if (isEmpty) {
+      _logger.d('No local data available, adding error to stream');
       _addError(error);
+    } else {
+      _logger.d('Local data available, keeping local data in stream');
     }
   }
 
   /// Loads local data and adds it to the stream
   Future<bool> _loadLocalData() async {
     try {
+      _logger.d('Loading local data...');
       final localData = await getLocalData();
       if (localData != emptyValue) {
         _subject.add(localData);
+        _logger.i(
+          'Local data loaded and added to stream',
+        );
+        _logger.d('Local data loaded:');
+        _logger.d(localData);
         return true;
       }
+      _logger.i('No local data was empty');
       return false;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      _logger.e('Failed to load local data', e, stackTrace);
       return false;
-      // Do nothing, we'll try to get remote data
     }
   }
 
   /// Loads remote data and adds it to the stream
   Future<T> _loadRemoteData() async {
     try {
+      _logger.i('Loading remote data...');
       final remoteData = await getRemoteData();
+      _logger.d('Remote data loaded');
+      _logger.d(remoteData);
       await addData(remoteData);
       return remoteData;
-    } catch (error) {
+    } catch (error, stackTrace) {
+      _logger.e('Failed to load remote data', error, stackTrace);
       _onRemoteDataError(error);
 
       rethrow;
@@ -153,9 +204,22 @@ abstract class StaleMateLoader<T> {
 
   /// Loads local data first, then remote data
   Future<void> initialize() async {
+    _logger.d('Initializing...');
     await _loadLocalData();
     if (updateOnInit || isEmpty) {
+      if (isEmpty) {
+        _logger
+            .i('No local data available after initialization, refreshing data');
+      } else {
+        _logger.i(
+          'Local data available after initialization, but updateOnInit is true, refreshing data',
+        );
+      }
       await _refresher.refresh();
+    } else {
+      _logger.i(
+        'Local data available after initialization, updateOnInit is false, not refreshing data',
+      );
     }
   }
 
@@ -169,19 +233,51 @@ abstract class StaleMateLoader<T> {
   /// For example, to indicate to the user if the refresh succeeded or not
   /// or to show a message to the user if the refresh failed
   Future<StaleMateRefreshResult<T>> refresh() async {
-    return _refresher.refresh();
+    _logger.i('Refreshing data...');
+    final refreshResult = await _refresher.refresh();
+    if (refreshResult.isFailure) {
+      _logger.e(
+        'Failed to refresh data',
+        refreshResult.error,
+        StackTrace.current,
+      );
+    } else {
+      _logger.i('Data refreshed successfully');
+    }
+    _logger.d(refreshResult);
+
+    return refreshResult;
   }
 
   /// Resets the data to the empty value and removes local data
   Future<void> reset() async {
+    _logger.i('Resetting data...');
     await removeLocalData();
+    _logger.d('Local data removed');
+    _logger.d('Adding empty value to stream');
     _subject.add(emptyValue);
+  }
+
+  void setLogLevel(StaleMateLogLevel logLevel) {
+    // Initialize the logger
+    _logger = Logger(
+      level: staleMateLogLevelToLevel(logLevel),
+      printer: TaggedLoggingPrinter(
+        tag: runtimeType.toString(),
+        methodCount: logLevel == StaleMateLogLevel.debug ? 2 : 0,
+        printTime: logLevel == StaleMateLogLevel.debug,
+        colors: false,
+      ),
+    );
+    _logger.d('Setting log level to $logLevel');
   }
 
   /// Closes the stream
   close() {
+    _logger.d('Closing stream');
     _subject.close();
     _refresher.dispose();
+    _logger.d('Unregistering from registry');
     StaleMateRegistry.instance.unregister(this);
   }
 }
