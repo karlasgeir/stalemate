@@ -12,12 +12,11 @@ class SimpleStaleMateLoader extends StaleMateLoader<String> {
   int timesUpdatedFromRemote = 0;
 
   SimpleStaleMateLoader({
-    bool updateOnInit = true,
-    bool showLocalDataOnError = true,
+    super.logLevel,
+    super.updateOnInit,
+    super.showLocalDataOnError,
   }) : super(
           emptyValue: '',
-          updateOnInit: updateOnInit,
-          showLocalDataOnError: showLocalDataOnError,
         );
 
   @override

@@ -22,7 +22,18 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
   /// manually before it starts loading data
   /// If you know that the loader can initialize as soon as the page is loaded,
   /// you can call this method in the initState() method
-  final loader = SimpleStaleMateLoader();
+  final loader = SimpleStaleMateLoader(
+    // The log level is set to [StaleMateLogLevel.debug]
+    // which enables detailed console logging.
+    // This provides in-depth insights into the loaders'
+    // behavior and is particularly useful for debugging.
+    // Note that it produces verbose output.
+    // If you prefer silent operation, set the log level to [StaleMateLogLevel.none],
+    // which is the default setting and causes no console output.
+    // Regardless of the set log level,
+    // console output is suppressed in release builds for performance optimization.
+    logLevel: StaleMateLogLevel.debug,
+  );
 
   // These are just flags used to show when the loader is in a certain state
   // They are not required for the loader to work, it is just to show the state
@@ -45,6 +56,7 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     setState(() {
       initializing = true;
     });
+
     // The initialize method can be awaited to know when the loader is ready
     // If the loader has local data available, it will be returned immediately
     // and theh remote data will be fetched subsequently if the [StaleMateLoader.updateOnInit] is set to true

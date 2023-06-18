@@ -92,6 +92,12 @@ class TodosLoader extends StaleMateLoader<List<ToDo>> {
           // If you want to show the user an error on refresh, the refresh call returns a
           // [StaleMateRefreshResult] object which incidates if the refresh was successful or not.
           showLocalDataOnError: true,
+          // Set the log level for this specific loader.
+          // The [StaleMateLogLevel.debug] value provides detailed console output,
+          // beneficial for debugging.
+          // The default value is [StaleMateLogLevel.none],
+          // which suppresses all output.
+          logLevel: StaleMateLogLevel.none
         );
 
   @override
@@ -158,6 +164,35 @@ void dispose() {
     super.dispose();
   }
 ```
+
+### Logging
+
+StaleMate loaders offer comprehensive logging, shedding light on their internal operations and aiding in debugging potential issues.
+
+You have several options for configuring logging to suit your needs:
+
+- Set the log level for individual loaders during creation.
+- Adjust the log level on a per-loader basis using the setLogLevel method.
+- Modify the default global log level with StaleMate.setLogLevel.
+
+The last option alters the log level for all existing loaders, overriding any previously specified log levels. It also sets a default for any future loaders. However, if a specific log level is provided during the creation of a new loader, this will take precedence over the global default.
+
+```dart
+// Specify it when creating an instance of the loader
+final loader = ExampleStaleMateLoader(
+    //...
+    logLevel: StaleMateLogLevel.debug
+    //...
+)
+
+// Use the 'setLogLevel' method on the loaders
+loader.setLogLevel(StaleMateLogLevel.info);
+
+// Set it globally
+StaleMate.setLogLevel(StaleMateLogLevel.error);
+```
+
+> The library is using the awesome [Logger](https://pub.dev/packages/logger/) library and their DevelopmentFilter behind the scenes. The filter makes sure nothing is logged in release builds.
 
 ### Displaying data
 

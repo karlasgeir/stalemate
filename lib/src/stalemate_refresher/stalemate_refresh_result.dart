@@ -113,4 +113,18 @@ class StaleMateRefreshResult<T> {
       refreshFinishedAt: refreshFinishedAt,
     );
   }
+
+  @override
+  String toString() {
+    final buffer = StringBuffer();
+    buffer.writeln('StaleMateRefreshResult<$T>(');
+    buffer.writeln('    status: $status,');
+    buffer.writeln('    refreshInitiatedAt: $refreshInitiatedAt,');
+    buffer.writeln('    refreshFinishedAt: $refreshFinishedAt,');
+    buffer.writeln('    refreshedData: $refreshedData,');
+    buffer.writeln('    error: $error,');
+    buffer.writeln('    refreshDuration: $refreshDuration');
+    buffer.write(')');
+    return buffer.toString();
+  }
 }

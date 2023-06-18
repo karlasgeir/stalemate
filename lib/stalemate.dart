@@ -104,4 +104,17 @@ class StaleMate {
   /// If you want to reset a specific loader, use [StaleMateLoader.reset] on the loader instance.
   static Future<void> resetFirstLoader<T extends StaleMateLoader>() =>
       StaleMateRegistry.instance.resetFirstLoader<T>();
+
+  /// Sets the global log level for all registered StaleMate loaders.
+  ///
+  /// This method affects the logging level in two ways:
+  /// 1. It immediately updates the log level of all registered loaders,
+  ///    even those that have had their log level individually set via [StaleMateLoader.setLogLevel].
+  /// 2. It sets a default log level for any loaders registered in the future,
+  ///    unless a specific log level is set for them.
+  ///
+  /// The default log level is [StaleMateLogLevel.none].
+  static void setLogLevel(StaleMateLogLevel logLevel) {
+    StaleMateRegistry.instance.setLogLevel(logLevel);
+  }
 }

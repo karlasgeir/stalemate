@@ -73,6 +73,16 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
     // Create the loader with the pagination configuration
     loader = PaginatedExampleLoader(
       paginationConfig: widget.paginationConfig,
+      // The log level is set to [StaleMateLogLevel.debug]
+      // which enables detailed console logging.
+      // This provides in-depth insights into the loaders'
+      // behavior and is particularly useful for debugging.
+      // Note that it produces verbose output.
+      // If you prefer silent operation, set the log level to [StaleMateLogLevel.none],
+      // which is the default setting and causes no console output.
+      // Regardless of the set log level,
+      // console output is suppressed in release builds for performance optimization.
+      logLevel: StaleMateLogLevel.debug,
     );
 
     // The loader needs to be initialized before it shows any data

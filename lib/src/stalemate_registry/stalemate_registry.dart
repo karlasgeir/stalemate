@@ -7,6 +7,8 @@ import '../stalemate_loader/stalemate_loader.dart';
 /// This registry should not be used directly, but rather through the repository using the [StaleMateLoader]s.
 /// This registry is used to hold an instance of all [StaleMateLoader]s to be able to clear them all once the user logs out.
 class StaleMateRegistry {
+  StaleMateLogLevel defaultLogLevel = StaleMateLogLevel.none;
+
   /// The list of [StaleMateLoader]s
   final List<StaleMateLoader> _loaders = [];
 
@@ -113,5 +115,21 @@ class StaleMateRegistry {
     assert(loader != null, 'No loader of type $T found in registry');
 
     return loader!.reset();
+  }
+
+  /// Sets the global log level for all StaleMate loaders in the registry.
+  ///
+  /// This method affects the logging level in two ways:
+  /// 1. It immediately updates the log level of all registered loaders,
+  ///    even those that have had their log level individually set via [StaleMateLoader.setLogLevel].
+  /// 2. It sets a default log level for any loaders registered in the future,
+  ///    unless a specific log level is set for them.
+  ///
+  /// The default log level is [StaleMateLogLevel.none].
+  void setLogLevel(StaleMateLogLevel logLevel) {
+    defaultLogLevel = logLevel;
+    for (var loader in _loaders) {
+      loader.setLogLevel(logLevel);
+    }
   }
 }
