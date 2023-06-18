@@ -1,30 +1,114 @@
 part of '../stalemate_loader/stalemate_loader.dart';
 
+/// A [StaleMateLoader] that supports pagination.
+///
+/// This loader is useful when you have data that needs to be loaded in pages.
+///
+/// The [StaleMatePaginatedLoader] supports everything that the [StaleMateLoader] supports
+/// and its constructor arguments are mostly the same.
+///
+/// Difference from base [StaleMateLoader]:
+/// - [paginationConfig] is required and it is used to load the data in pages.
+///  - The [StaleMatePaginationConfig] is used to provide the params for the next page of data.
+/// - [getRemoteData] should not be implemented, instead [getRemotePaginatedData] is required.
+///     - The [getRemotePaginatedData] method is used to fetch the next page of data.
+/// - [fetchMore] method is added to fetch more data from the server.
+/// - [isFetchingMore] flag is added to indicate if fetch more is in progress.
+///
+/// See also:
+/// - [StaleMatePaginationConfig]
+/// - [StaleMatePagePagination]
+/// - [StaleMateOffsetLimitPagination]
+/// - [StaleMateCursorPagination]
+/// - [StaleMateFetchMoreResult]
+///
+/// Example:
+/// ```dart
+/// class MyPaginatedLoader extends StaleMatePaginatedLoader<MyData> {
+///   MyPaginatedLoader() : super(
+///     paginationConfig: StaleMatePagePagination(
+///       pageSize: 10,
+///       zeroBasedIndexing: false,
+///     );
+///
+///   @override
+///   Future<List<MyData>> getRemotePaginatedData(Map<String, dynamic> paginationParams) async {
+///     final pageSize = paginationParams['pageSize'];
+///     final pageNumber = paginationParams['pageNumber'];
+///
+///     // Fetch the data from the server
+///    }
+/// }
+///
+/// final loader = MyPaginatedLoader();
+///
+/// // Load the first page of data
+/// await loader.initialize();
+///
+/// // Fetch more data
+/// final result = await loader.fetchMore();
+/// result.on(
+///   success: (mergedData, newData, isDone) {
+///     // Datat is already in the data stream
+///     // Do something with the data if needed
+///   },
+///   failure: (error) {
+///     // Do something with the error
+///   },
+///);
+///```
 abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
-  /// The pagination config that will be used to load the data
-  /// The [StaleMatePaginationConfig] is used to provide the params for the next page of data
-  /// The params will be received in the [getRemotePaginatedData] method
+  /// Pagination config used to load the data in pages
+  ///
+  /// See also:
+  /// - [StaleMatePaginationConfig]
+  /// - [StaleMatePagePagination]
+  /// - [StaleMateOffsetLimitPagination]
+  /// - [StaleMateCursorPagination]
   final StaleMatePaginationConfig<T> paginationConfig;
-  
-  /// This flag is used to indicate if the loader is currently fetching more data
+
+  /// Indicates if fetch more is in progress
   bool isFetchingMore = false;
 
+  /// Create a new [StaleMatePaginatedLoader] instance
+  ///
+  /// Used to load data in pages.
+  ///
+  /// Arguments:
+  /// - **paginationConfig:** Pagination config used to load the data in pages
+  /// - **updateOnInit:** If true, the loader will update the data stream on initialization
+  /// - **showLocalDataOnError:** If true, the loader will show the local data on error
+  /// - **refreshConfig:** Refresh config used to refresh the data
   StaleMatePaginatedLoader({
-    /// The pagination config that will be used to load the data
     required this.paginationConfig,
     super.updateOnInit,
     super.showLocalDataOnError,
     super.refreshConfig,
-    super.logLevel,
   }) : super(emptyValue: const []);
 
-  /// Override this method in subclasses of [StaleMatePaginatedLoader]
-  /// the params in the [paginationParams] depend on the [StaleMatePaginationConfig] used
-  /// The [paginationParams] can be used to fetch the next page of data
+  /// This method is called when the loader needs to fetch the next page of data from the server
+  ///
+  /// The [paginationParams] argument contains the params needed to fetch the next page of data
+  ///
+  /// Override this method to fetch the next page of data from the server based on the [paginationParams]
+  ///
+  /// The data returned from this method will be passed through the [StaleMatePaginationConfig.onReceivedData] method
+  /// which handles merging the data and setting the [canFetchMore] flag
+  ///
+  /// Returns the page of data based on the [paginationParams]
   Future<List<T>> getRemotePaginatedData(Map<String, dynamic> paginationParams);
 
-  /// Do not override this method in subclasses of [StaleMatePaginatedLoader]
-  /// The getRemoteData function is implemented for you in [StaleMatePaginatedLoader]
+  /// This method is called when the loader is refreshed or initialized
+  ///
+  /// ** DO NOT OVERRIDE THIS METHOD **
+  /// Instead override [getRemotePaginatedData] method
+  /// If you absolutely need to override this method, make sure to call super
+  /// and return the data returned from super
+  /// This method is used to fetch the first page of data from the server
+  /// The data returned from this method will be passed through the [StaleMatePaginationConfig.onReceivedData] method
+  /// which handles merging the data and setting the [canFetchMore] flag
+  ///
+  /// Returns the first page of data
   @override
   Future<List<T>> getRemoteData() async {
     // Get remote data is only called on initial loading and refresh
@@ -35,34 +119,63 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
       null,
     );
 
-    _logger.i('Get remote data called, which will reset the pagination');
-    _logger.d('Resetting pagination with Query params: $queryParams');
-
     // The data returned from the server is passed through the [onReceivedData] method
     // which handles merging the data and setting the [canFetchMore] flag
     final data = await getRemotePaginatedData(queryParams);
-    final mergedData = paginationConfig.onReceivedData(data, []);
-    _logger.i(
-      'Received ${data.length} items from server, merged data is now ${mergedData.length}',
-    );
-    _logger.d('Data from server: ');
-    _logger.d(data);
-    _logger.d('Merged data: ');
-    _logger.d(mergedData);
-    return mergedData;
+    return paginationConfig.onReceivedData(data, []);
   }
 
-  /// Call this method to fetch more data from the server
-  /// This method will return a [StaleMateFetchMoreResult] with the status of the fetch more
-  /// The [StaleMateFetchMoreResult] will contain the new data and the merged data if fetch more is sucessful
-  /// The [StaleMateFetchMoreResult] will contain the error if fetch more fails
-  /// There is no need to use the data returned from this method, the data will be added to the stream automatically
-  /// The data is there for your convinience if you want to do something with it, show how many items were added etc
+  /// Fetch more data from the server
+  ///
+  /// This method is used to fetch the next page of data from the server
+  ///
+  /// The data returned from this method will be passed through the [StaleMatePaginationConfig.onReceivedData] method
+  /// which handles merging the data and setting the [canFetchMore] flag
+  ///
+  /// Returns a [StaleMateFetchMoreResult] which can be used to handle the result of the fetch more operation
+  /// The status of the fetch more operation can be checked using the [StaleMateFetchMoreResult.status] property
+  /// - [StaleMateFetchMoreStatus.done] indicates that the fetch more was successful and there is no more data to fetch
+  /// - [StaleMateFetchMoreStatus.moreDataAvailable] indicates that the fetch more was successful and there is more data to fetch
+  /// - [StaleMateFetchMoreStatus.alreadyFetching] indicates that the fetch more is already in progress
+  /// - [StaleMateFetchMoreStatus.error] indicates that the fetch more failed with an error
+  ///
+  /// Example:
+  /// ```dart
+  /// final result = await loader.fetchMore();
+  ///
+  /// // Check the status of the fetch more operation
+  /// switch (result.status) {
+  ///   case StaleMateFetchMoreStatus.done:
+  ///     final data = result.requireData;
+  ///     // do something when there is no more data to fetch
+  ///     break;
+  ///   case StaleMateFetchMoreStatus.moreDataAvailable:
+  ///    final data = result.requireData;
+  ///    // do something when there is more data to fetch
+  ///     break;
+  ///   case StaleMateFetchMoreStatus.alreadyFetching:
+  ///     // Do something when fetch more is already in progress
+  ///     break;
+  ///   case StaleMateFetchMoreStatus.error:
+  ///     final error = result.requireError;
+  ///       // Do something with the error
+  ///     break;
+  ///  }
+  ///
+  ///  // Or use the on method
+  /// result.on(
+  ///   success: (mergedData, newData, isDone) {
+  ///     // Do something on success
+  ///   },
+  ///   failure: (error) {
+  ///     // Do something on error
+  ///   },
+  /// );
+  /// ```
   Future<StaleMateFetchMoreResult<T>> fetchMore() async {
     if (paginationConfig.canFetchMore) {
       // If fetch more is already in progress, return already refreshing
       if (isFetchingMore) {
-        _logger.i('Fetch more called, but it is already in progress');
         return StaleMateFetchMoreResult<T>.alreadyFetching();
       }
 
@@ -77,70 +190,49 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
         value.last,
       );
 
-      _logger.i('Fetch more called with query params: $queryParams');
-
       try {
         // Get the new data from the implemented getRemotePaginatedData method
         final newData = await getRemotePaginatedData(queryParams);
+
         // The data returned from the server is passed through the [onReceivedData] method
         // which handles merging the data and setting the [canFetchMore] flag
         final mergedData = paginationConfig.onReceivedData(newData, value);
-
-        _logger.i(
-            'Received ${newData.length} items from server, merged data is now ${mergedData.length}');
-        _logger.d('New data from server: ');
-        _logger.d(newData);
-        _logger.d('Merged data: ');
-        _logger.d(mergedData);
 
         // Add the merged data to the stream
         addData(mergedData);
 
         // If we can fetch more data, return more data available
         if (paginationConfig.canFetchMore) {
-          final result = StaleMateFetchMoreResult<T>.moreDataAvailable(
+          return StaleMateFetchMoreResult<T>.moreDataAvailable(
             fetchMoreInitiatedAt: fetchMoreInitiatedAt,
             queryParams: queryParams,
             newData: newData,
             mergedData: mergedData,
           );
-          _logger.i('More data available');
-          _logger.d('Fetch more result: ');
-          _logger.d(result);
-          return result;
         }
 
         // If we can't fetch more data, return done
-        final result = StaleMateFetchMoreResult<T>.done(
+        return StaleMateFetchMoreResult<T>.done(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
           queryParams: queryParams,
           newData: newData,
           mergedData: mergedData,
         );
-        _logger.i('No more data on server, done fetching more');
-        _logger.d('Fetch more result: ');
-        _logger.d(result);
-        return result;
-      } catch (error, stackTrace) {
+      } catch (error) {
         // Tell the base loader to handle the error appropritaly
         _onRemoteDataError(error);
 
         // Return failure
-        final result = StaleMateFetchMoreResult<T>.failure(
+        return StaleMateFetchMoreResult<T>.failure(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
           queryParams: queryParams,
           error: error,
         );
-        _logger.e('Fetch more failed', error, stackTrace);
-        _logger.d('Fetch more result: ');
-        _logger.d(result);
-        return result;
       } finally {
         // Set is fetching more to false so that we can call fetch more again
         isFetchingMore = false;
       }
     } else {
-      _logger.i('Fetch more called, but no more data available');
       // We were done fetching more data before this request
       // This can happen if the user calls fetch more after the last page of data has been fetched
       // We include the fetch more parameters and the merged data in the result
