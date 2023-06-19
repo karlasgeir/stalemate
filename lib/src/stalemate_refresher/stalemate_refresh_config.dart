@@ -17,8 +17,8 @@ import '../clock/clock.dart';
 ///   The default implementation is probably correct for most use cases, but can be overridden if needed
 ///
 /// Implementations:
-/// - [StalePeriodRefreshConfig]
-/// - [TimeOfDayRefreshConfig]
+/// - [StalePeriodRefreshConfig] : Refreshes data after a specified duration
+/// - [TimeOfDayRefreshConfig] : Refreshes data at a specified time of day
 ///
 /// Example:
 /// ```dart

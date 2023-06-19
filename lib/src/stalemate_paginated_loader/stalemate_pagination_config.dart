@@ -10,9 +10,9 @@
 ///     - The default implementation of [onReceivedData] will append the new data to the old data
 ///
 /// Implementations:
-/// - [StaleMatePagePagination]: Page-based pagination
-/// - [StaleMateOffsetLimitPagination]: Offset-based pagination
-/// - [StaleMateCursorPagination]: Cursor-based pagination
+/// - [StaleMatePagePagination] : Page-based pagination
+/// - [StaleMateOffsetLimitPagination] : Offset-based pagination
+/// - [StaleMateCursorPagination] : Cursor-based pagination
 ///
 /// Example:
 /// ```dart

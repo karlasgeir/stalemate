@@ -6,10 +6,10 @@ import 'package:flutter/widgets.dart';
 /// based on the state of the data
 ///
 /// States:
-/// - [StaleMateDataState.loading]: The data is currently being loaded
-/// - [StaleMateDataState.loaded]: The data has been loaded successfully
-/// - [StaleMateDataState.error]: An error was thrown while loading the data
-/// - [StaleMateDataState.empty]: The data is empty
+/// - [StaleMateDataState.loading] : The data is currently being loaded
+/// - [StaleMateDataState.loaded] : The data has been loaded successfully
+/// - [StaleMateDataState.error] : An error was thrown while loading the data
+/// - [StaleMateDataState.empty] : The data is empty
 ///
 /// The [StaleMateData.when] method can be used to handle the state of the data
 /// in a more convenient way
@@ -138,13 +138,15 @@ class StaleMateData<T> {
   /// Example:
   /// ```dart
   /// StaleMateBuilder(
-  /// loader: loader,
-  /// builder: (context, data) {
-  ///   return data.when(
-  ///   loading: () => Text('Loading...'),
-  ///   data: (data) => Text('Data: $data'),
-  ///   empty: () => Text('Empty'),
-  ///   error: (error) => Text('Error: $error'),
+  ///   loader: loader,
+  ///   builder: (context, data) {
+  ///     return data.when(
+  ///       loading: () => Text('Loading...'),
+  ///       data: (data) => Text('Data: $data'),
+  ///       empty: () => Text('Empty'),
+  ///       error: (error) => Text('Error: $error'),
+  ///     );
+  ///   }
   /// );
   /// ```
   Widget when({
