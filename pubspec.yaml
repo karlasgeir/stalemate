@@ -1,12 +1,12 @@
 name: stalemate
-description: A new Flutter package project.
+description: StaleMate - A flexible Flutter data synchronization library. Supports any data storage or fetching method.
 version: 0.0.1
 homepage:
 repository: https://github.com/karlasgeir/stalemate
 issue_tracker: https://github.com/karlasgeir/stalemate/issues
 
 environment:
-  sdk: '>=3.0.2 <4.0.0'
+  sdk: ">=3.0.2 <4.0.0"
   flutter: ">=1.17.0"
 
 dependencies:
