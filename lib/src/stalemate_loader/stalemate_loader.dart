@@ -442,11 +442,11 @@ abstract class StaleMateLoader<T> {
   ///
   /// - [logLevel] the log level to set
   /// Available log levels:
-  /// - [StaleMateLogLevel.debug]: Logs everything
-  /// - [StaleMateLogLevel.info]: Logs info, warnings and errors
-  /// - [StaleMateLogLevel.warning]: Logs warnings and errors
-  /// - [StaleMateLogLevel.error]: Logs errors
-  /// - [StaleMateLogLevel.none]: Logs nothing
+  /// - [StaleMateLogLevel.debug] : Logs everything
+  /// - [StaleMateLogLevel.info] : Logs info, warnings and errors
+  /// - [StaleMateLogLevel.warning] : Logs warnings and errors
+  /// - [StaleMateLogLevel.error] : Logs errors
+  /// - [StaleMateLogLevel.none] : Logs nothing
   void setLogLevel(StaleMateLogLevel logLevel) {
     // Initialize the logger
     _logger = Logger(

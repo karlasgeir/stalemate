@@ -30,8 +30,8 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
   ///
   /// If this is null, the data will not be refreshed automatically
   /// See also:
-  /// - [StalePeriodRefreshConfig]: Refreshes the data after a specified stale period
-  /// - [TimeOfDayRefreshConfig]: Refreshes the data at a specified time of day
+  /// - [StalePeriodRefreshConfig] : Refreshes the data after a specified stale period
+  /// - [TimeOfDayRefreshConfig] : Refreshes the data at a specified time of day
   final StaleMateRefreshConfig? _refreshConfig;
 
   /// The time when the data was last refreshed

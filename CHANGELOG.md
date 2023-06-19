@@ -5,6 +5,7 @@ Initial Version of the library.
 Features:
 
 - **StaleMateLoader:** Core loader for managing stale data and facilitating automatic refresh.
+- **StaleMatePaginatedLoader:** A loader that supports paginating data from remote
 - **Automatic Refreshing:** Two built-in strategies for automatic data refreshing - stale period and time-of-day.
 - **Custom Refresh Strategy:** Offers flexibility to define custom refresh strategies tailored to your application's specific needs.
 - **StaleMateBuilder:** Stream-based builder for seamless UI updates based on the current data state.

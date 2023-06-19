@@ -5,8 +5,7 @@
 /// - We want to be able to make tests fast and deterministic
 ///
 /// Implementations:
-/// - [SystemClock]: Uses the system time
-/// - [MockClock]: A clock that can be used for testing
+/// - [SystemClock] : Uses the system time
 abstract class Clock {
   DateTime now();
 }
