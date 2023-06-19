@@ -15,24 +15,19 @@ Widget loadingIndicator(bool isShowing) => Container(
           : const SizedBox(),
     );
 
-/// A widget that demonstrates the use of the [StaleMatePaginatedLoader] class
-/// to load paginated data
-/// The [StaleMatePaginatedLoader] class is a subclass of [StaleMateLoader] that
-/// is used to load paginated data
-/// It takes in a [StaleMatePagePagination] object that is used to configure
-/// the pagination
-/// There are three built in implementations of pagination
-/// [StaleMatePagePagination] Is the base class for all pagination configurations
-/// Impelement the class to create your own pagination configuration
-/// 1. [StaleMatePageNumberPagination] - This is used for pagination that uses
-/// page number and page size
-/// 2. [StaleMatePageOffsetPagination] - This is used for pagination that uses
-/// offset and limit
-/// 3. [StaleMatePageCursorPagination] - This is used for pagination that uses
-/// cursor and limit
+/// A widget that demonstrates the use of the [StaleMatePaginatedLoader] class to load paginated data
+///
 class PaginatedLoaderExampleWidget extends StatefulWidget {
+  /// The pagination configuration that will be used by the loader
+  /// It defines what parameters are used to load the data
   final StaleMatePagePagination<String> paginationConfig;
 
+  /// Creates a new [PaginatedLoaderExampleWidget]
+  /// Arguments:
+  /// - **paginationConfig:** The pagination configuration that will be used by the loader
+  ///     - [StaleMatePagePagination]: Page based configuration
+  ///     - [StaleMateOffsetPagination]: Offset based configuration
+  ///     - [StaleMateCursorPagination]: Cursor based configuration
   const PaginatedLoaderExampleWidget({
     super.key,
     required this.paginationConfig,
@@ -43,10 +38,13 @@ class PaginatedLoaderExampleWidget extends StatefulWidget {
       _PaginatedLoaderExampleState();
 }
 
-/// This is the state of the [PaginatedLoaderExampleWidget]
+/// The state of the [PaginatedLoaderExampleWidget]
+///
+/// This is just a simple example to show how to use the [StaleMatePaginatedLoader] class
 class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
-  /// Just a simple scroll controller to scroll to the top of the list when refresh is finished
-  /// This is not required for the loader to work
+  /// Scroll controller
+  ///
+  /// Used to scroll to the top of the list when refreshing
   final ScrollController scrollController = ScrollController();
 
   /// This is the loader that will be used throughout the page
@@ -61,6 +59,7 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
   bool refreshing = false;
   bool fetchingMore = false;
 
+  /// The loader is initialized in the [initState] method
   @override
   void initState() {
     super.initState();
@@ -73,23 +72,18 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
     // Create the loader with the pagination configuration
     loader = PaginatedExampleLoader(
       paginationConfig: widget.paginationConfig,
-      // The log level is set to [StaleMateLogLevel.debug]
-      // which enables detailed console logging.
-      // This provides in-depth insights into the loaders'
-      // behavior and is particularly useful for debugging.
-      // Note that it produces verbose output.
-      // If you prefer silent operation, set the log level to [StaleMateLogLevel.none],
-      // which is the default setting and causes no console output.
-      // Regardless of the set log level,
-      // console output is suppressed in release builds for performance optimization.
+      // The loader will use the [StaleMateLogLevel.debug] log level
+      // This is just to show the logs in the console of the example app
+      // The default level is [StaleMateLogLevel.none]
+      // Nothing will log in release modes
       logLevel: StaleMateLogLevel.debug,
     );
 
     // The loader needs to be initialized before it shows any data
-    // if the loader is not initialized, it will just show as loading
     loader.initialize();
   }
 
+  /// The loader needs to be disposed when the widget is disposed
   @override
   void dispose() {
     // It is important to close the loader when it is no longer needed to avoid
@@ -140,6 +134,9 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
 
   /// Perform fetch more is called when the fetch more button is pressed
   /// The [StaleMateLoader.fetchMore] method is used to fetch more data
+  ///
+  /// The fetch more method returns a [StaleMateFetchMoreResult] object that can be used
+  /// to handle the result of the fetch more operation
   performFetchMore(bool withError) async {
     // incidate in the UI that the loader is fetching more data
     setState(() {
