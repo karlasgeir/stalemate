@@ -72,9 +72,6 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   /// This is used to cancel the fetch more operation if needed
   CancelableOperation<List<T>?>? _fetchMoreOperation;
 
-  /// Indicates if we're currently fetching more data from the server
-  bool isFetching = false;
-
   /// Create a new [StaleMatePaginatedLoader] instance
   ///
   /// Used to load data in pages.
@@ -108,13 +105,7 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   Future<void> initialize() async {
     _cancelFetchMore();
 
-    // Block the fetch more while we're initializing
-    this.isFetching = true;
-
     await super.initialize();
-
-    // Allow the fetch more again
-    this.isFetching = false;
   }
 
   /// This method is called when the loader is refreshed or initialized
@@ -132,8 +123,6 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   Future<List<T>> getRemoteData() async {
     _cancelFetchMore();
 
-    // Block the fetch more while we're fetching the first page of data
-    this.isFetching = true;
     // Get remote data is only called on initial loading and refresh
     // In those cases we reset the pagination and get the first page of data
     paginationConfig.reset();
@@ -145,9 +134,6 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
     // The data returned from the server is passed through the [onReceivedData] method
     // which handles merging the data and setting the [canFetchMore] flag
     final data = await getRemotePaginatedData(queryParams);
-
-    // Allow the fetch more again
-    this.isFetching = false;
 
     return paginationConfig.onReceivedData(data, []);
   }
@@ -213,13 +199,15 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
   Future<StaleMateFetchMoreResult<T>> fetchMore() async {
     if (paginationConfig.canFetchMore) {
       // If we are already fetching data, return already fetching
-      if (isFetching) {
-        _logger.d('Could not fetch more. Already fetching');
+      if (state.loading) {
+        _logger.d('Could not fetch more. Already fetching data');
         return StaleMateFetchMoreResult<T>.alreadyFetching();
       }
 
-      // Block simultaneous fetch more operations
-      isFetching = true;
+      _setState(state.copyWithRemoteStatus(
+        StaleMateStatus.loading,
+        fetchReason: StaleMateFetchReason.fetchMore,
+      ));
 
       final fetchMoreInitiatedAt = DateTime.now();
 
@@ -250,6 +238,11 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
             queryParams: queryParams,
           );
         }
+
+        _setState(state.copyWithRemoteStatus(
+          StaleMateStatus.loaded,
+          fetchReason: StaleMateFetchReason.fetchMore,
+        ));
 
         // The data returned from the server is passed through the [onReceivedData] method
         // which handles merging the data and setting the [canFetchMore] flag
@@ -286,6 +279,14 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
         // Tell the base loader to handle the error appropritaly
         _onRemoteDataError(error);
 
+        _setState(
+          state.copyWithRemoteStatus(
+            StaleMateStatus.error,
+            fetchReason: StaleMateFetchReason.fetchMore,
+            error: error,
+          ),
+        );
+
         // Return failure
         final fetchMoreResult = StaleMateFetchMoreResult<T>.failure(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
@@ -296,9 +297,6 @@ abstract class StaleMatePaginatedLoader<T> extends StaleMateLoader<List<T>> {
         _logger.d(fetchMoreResult);
 
         return fetchMoreResult;
-      } finally {
-        // Allow the next fetch more operation
-        isFetching = false;
       }
     } else {
       _logger.d('No more data to fetch');
