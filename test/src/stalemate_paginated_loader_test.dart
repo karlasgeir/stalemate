@@ -117,11 +117,72 @@ void main() {
       );
     });
 
+    test(
+        'should return already fetching more if fetch more is called while initializing',
+        () async {
+      final intializeFuture = paginatedLoader.initialize();
+      expect(paginatedLoader.isFetching, true);
+      final fetchMoreResult = await paginatedLoader.fetchMore();
+
+      await intializeFuture;
+
+      // Should be set
+      expect(
+        fetchMoreResult.status,
+        StaleMateFetchMoreStatus.alreadyFetching,
+      );
+      expect(fetchMoreResult.isAlreadyFetching, true);
+
+      // Should not be set
+      expect(fetchMoreResult.isFailure, false);
+      expect(fetchMoreResult.isDone, false);
+      expect(fetchMoreResult.hasData, false);
+      expect(fetchMoreResult.moreDataAvailable, false);
+      expect(fetchMoreResult.error, null);
+      expect(
+          () => fetchMoreResult.requireError, throwsA(isA<AssertionError>()));
+      expect(fetchMoreResult.fetchMoreInitiatedAt, isNull);
+      expect(() => fetchMoreResult.requireFetchMoreInitiatedAt,
+          throwsA(isA<AssertionError>()));
+      expect(fetchMoreResult.fetchMoreFinishedAt, isNull);
+      expect(() => fetchMoreResult.requireFetchMoreFinishedAt,
+          throwsA(isA<AssertionError>()));
+      expect(fetchMoreResult.fetchMoreDuration, isNull);
+      expect(() => fetchMoreResult.requireFetchMoreDuration,
+          throwsA(isA<AssertionError>()));
+      expect(fetchMoreResult.newData, null);
+      expect(
+          () => fetchMoreResult.requireNewData, throwsA(isA<AssertionError>()));
+      expect(fetchMoreResult.mergedData, null);
+      expect(() => fetchMoreResult.requireMergedData,
+          throwsA(isA<AssertionError>()));
+      expect(fetchMoreResult.fetchMoreParameters, null);
+
+      // The loader should only have the data fromt he initialization
+      expect(
+        paginatedLoader.value,
+        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+      );
+
+      // next paginated query params should be the second page, since the first call
+      // to fetch more was ignored
+      expect(
+        paginatedLoader.paginationConfig.getQueryParams(
+          paginatedLoader.value.length,
+          paginatedLoader.value.last,
+        ),
+        {
+          'page': 2,
+          'pageSize': 10,
+        },
+      );
+    });
+
     test('should return already fetching while fetching more', () async {
       await paginatedLoader.initialize();
-      expect(paginatedLoader.isFetchingMore, false);
+      expect(paginatedLoader.isFetching, false);
       final paginatedLoaderFuture = paginatedLoader.fetchMore();
-      expect(paginatedLoader.isFetchingMore, true);
+      expect(paginatedLoader.isFetching, true);
       final otherfetchMoreResult = await paginatedLoader.fetchMore();
       await paginatedLoaderFuture;
 
@@ -174,6 +235,50 @@ void main() {
           'page': 3,
           'pageSize': 10,
         },
+      );
+    });
+
+    test('should cancel fetch more if refresh is called while fetching more',
+        () async {
+      await paginatedLoader.initialize();
+      final fetchMoreFuture = paginatedLoader.fetchMore();
+      final refreshResult = await paginatedLoader.refresh();
+
+      final fetchMoreResult = await fetchMoreFuture;
+
+      expect(fetchMoreResult.status, StaleMateFetchMoreStatus.cancelled);
+      expect(refreshResult.status, StaleMateRefreshStatus.success);
+
+      expect(
+        paginatedLoader.value,
+        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+      );
+    });
+
+    test('should cancel fetch more when reset', () async {
+      await paginatedLoader.initialize();
+      final fetchMoreFuture = paginatedLoader.fetchMore();
+      await paginatedLoader.reset();
+
+      final fetchMoreResult = await fetchMoreFuture;
+
+      expect(fetchMoreResult.status, StaleMateFetchMoreStatus.cancelled);
+
+      expect(paginatedLoader.value, isEmpty);
+    });
+
+    test('should cancel fetch-more if re-initialized', () async {
+      await paginatedLoader.initialize();
+      final fetchMoreFuture = paginatedLoader.fetchMore();
+      await paginatedLoader.initialize();
+
+      final fetchMoreResult = await fetchMoreFuture;
+
+      expect(fetchMoreResult.status, StaleMateFetchMoreStatus.cancelled);
+
+      expect(
+        paginatedLoader.value,
+        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
       );
     });
 

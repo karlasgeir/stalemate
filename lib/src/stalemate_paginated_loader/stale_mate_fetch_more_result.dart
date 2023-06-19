@@ -5,6 +5,7 @@
 /// - **moreDataAvailable:** The fetch more operation was successful and more data is available
 /// - **failure:** The fetch more operation was unsuccessful
 /// - **done:** The fetch more operation was successful but no more data is available
+/// - **cancelled:** The fetch more operation was cancelled
 enum StaleMateFetchMoreStatus {
   alreadyFetching,
 
@@ -13,6 +14,8 @@ enum StaleMateFetchMoreStatus {
   failure,
 
   done,
+
+  cancelled,
 }
 
 /// The result of a fetch more operation
@@ -129,6 +132,9 @@ class StaleMateFetchMoreResult<T> {
   /// Fetch more successful but no more data is available
   bool get isDone => status == StaleMateFetchMoreStatus.done;
 
+  /// Fetch more cancelled
+  bool get isCancelled => status == StaleMateFetchMoreStatus.cancelled;
+
   /// Fetch more successful and has data
 
   /// It is safe to call [requireNewData] or [requireMergedData] if this is true
@@ -232,6 +238,21 @@ class StaleMateFetchMoreResult<T> {
     } else if (hasData) {
       success?.call(requireMergedData, requireNewData, isDone);
     }
+  }
+
+  /// Short hand for [StaleMateFetchMoreStatus.cancelled]
+  ///
+  /// Use this to create a [StaleMateFetchMoreResult] with [StaleMateFetchMoreStatus.cancelled]
+  factory StaleMateFetchMoreResult.cancelled({
+    required DateTime fetchMoreInitiatedAt,
+    required Map<String, dynamic> queryParams,
+  }) {
+    return StaleMateFetchMoreResult(
+      status: StaleMateFetchMoreStatus.cancelled,
+      fetchMoreInitiatedAt: fetchMoreInitiatedAt,
+      fetchMoreFinishedAt: DateTime.now(),
+      fetchMoreParameters: queryParams,
+    );
   }
 
   /// Short hand for [StaleMateFetchMoreStatus.alreadyFetching]
