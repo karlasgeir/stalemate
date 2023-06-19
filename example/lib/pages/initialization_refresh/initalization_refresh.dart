@@ -9,6 +9,10 @@ import '../../services/snack_bar_service.dart';
 import 'widgets/initialization_refresh_data_state.dart';
 import 'widgets/initialization_refresh_loading_state.dart';
 
+/// This page demonstrates how to use the [SimpleStaleMateLoader] to
+/// initialize and refresh data.
+///
+/// The loader is initialized in the [initState] method
 class InitializationRefresh extends StatefulWidget {
   const InitializationRefresh({super.key});
 
@@ -17,33 +21,34 @@ class InitializationRefresh extends StatefulWidget {
 }
 
 class _InitializationRefreshState extends State<InitializationRefresh> {
-  // This is the loader that will be used throughout the page
-  /// The loader is not initialized automatically, so we need to initialize it
-  /// manually before it starts loading data
-  /// If you know that the loader can initialize as soon as the page is loaded,
-  /// you can call this method in the initState() method
+  // The loader that provides the data
   final loader = SimpleStaleMateLoader(
-    // The log level is set to [StaleMateLogLevel.debug]
-    // which enables detailed console logging.
-    // This provides in-depth insights into the loaders'
-    // behavior and is particularly useful for debugging.
-    // Note that it produces verbose output.
-    // If you prefer silent operation, set the log level to [StaleMateLogLevel.none],
-    // which is the default setting and causes no console output.
-    // Regardless of the set log level,
-    // console output is suppressed in release builds for performance optimization.
+    // The log level is set to debug to show the logs in the console
+    // Debug is very verbose and can be turned off if preferred
+    // The default value is [StaleMateLogLevel.none]
+    // Nothing will log in release mode
     logLevel: StaleMateLogLevel.debug,
   );
 
-  // These are just flags used to show when the loader is in a certain state
-  // They are not required for the loader to work, it is just to show the state
-  // of the loader in the UI of the example app
+  /// State variables to track the state of the loader,
+  /// so that the UI can be updated accordingly
+
+  /// Loader is currently initializing
   bool initializing = false;
+
+  /// Loader is currently refreshing
   bool refreshing = false;
+
+  /// Loader is currently refreshing with an error
+  /// This is not a state that you would normally track in an
+  /// application, but it is tracked here to be able to show
+  /// different messages when we know we are going to get an error
   bool errorRefreshing = false;
 
+  /// Combined state variable to track if the loader is currently loading
   bool get isLoading => initializing || refreshing || errorRefreshing;
 
+  /// When the widget is disposed of, the loader should be closed
   @override
   void dispose() {
     // It is important to close the loader when it is no longer needed to avoid
@@ -52,7 +57,11 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     super.dispose();
   }
 
+  /// The loader is initialized with the push of a button
+  /// However, if you want it to be initialized when the widget is first built,
+  /// you can call the [StaleMateLoader.initialize] method in the [initState] method
   initializeLoader() async {
+    // Update the state to show that the loader is currently initializing
     setState(() {
       initializing = true;
     });
@@ -63,19 +72,28 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     // If the loader does not have local data available, the remote data will be fetched immediately
     // irrespective of the [StaleMateLoader.updateOnInit] value
     await loader.initialize();
+
+    // Update the state to show that the loader is no longer initializing
     setState(() {
       initializing = false;
     });
   }
 
-  performRefresh() async {
-    // The refresh method can be awaited to know when the loader has finished
-    // refreshing the data
-    // The refresh method returns a [StaleMateRefreshResult] object that can be used
-    // to handle the result of the refresh operation
-    // The [StaleMateRefreshResult.on] is a utility method that can be used to handle
-    // the result of the refresh operation
-    (await loader.refresh()).on(
+  /// The loader is refreshed with the push of a button
+  ///
+  /// The [StaleMateLoader.refresh] method can be called to refresh the data
+  ///
+  /// The [StaleMateLoader.refresh] method can be awaited to know when the loader has finished
+  /// refreshing the data
+  ///
+  /// The [StaleMateLoader.refresh] method returns a [StaleMateRefreshResult] object that can be used
+  /// to handle the result of the refresh operation
+  Future<bool> performRefresh() async {
+    final result = await loader.refresh();
+
+    // You can use the [StaleMateRefreshResult.on] method to handle the result of
+    // the refresh operation, especially useful if you want to show a message to the user
+    result.on(
       success: (data) {
         SnackBarService.of(context).show(
           'Refreshed data successfully: $data',
@@ -87,8 +105,27 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
         );
       },
     );
+
+    // You could also just look at the status of the result to determine if the
+    // refresh was successful or not
+    switch (result.status) {
+      case StaleMateRefreshStatus.success:
+        // do someting on success
+        break;
+      case StaleMateRefreshStatus.failure:
+        // do someting on failure
+        break;
+      case StaleMateRefreshStatus.alreadyRefreshing:
+        // do someting if already refreshing
+        break;
+    }
+
+    // You can also just check if the refresh was successful or not
+    return result.isSuccess;
   }
 
+  /// This is a helper method that can be used to refresh the loader
+  /// It is used to manage the refreshing state of the loader
   refreshLoader() async {
     setState(() {
       refreshing = true;
@@ -99,6 +136,10 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     });
   }
 
+  /// This is a helper method that can be used to refresh the loader with an error
+  ///
+  /// It configures the loader to simulate an error during the refresh operation
+  /// and then calls the [refreshLoader] method to refresh the loader
   refreshLoaderWithError() async {
     setState(() {
       errorRefreshing = true;
@@ -113,9 +154,12 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     });
   }
 
+  /// The loader is reset with the push of a button
+  ///
+  /// The [StaleMateLoader.reset] method can be called to reset the loader
+  /// - The data in the loader will be cleared
+  /// - The local data will be removed
   resetLoader() {
-    // The reset method clears all data from the loader and the local data source
-    // if the [StaleMateLoader.removeLocalData] method was overridden
     loader.reset();
   }
 
