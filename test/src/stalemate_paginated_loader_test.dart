@@ -121,7 +121,6 @@ void main() {
         'should return already fetching more if fetch more is called while initializing',
         () async {
       final intializeFuture = paginatedLoader.initialize();
-      expect(paginatedLoader.isFetching, true);
       final fetchMoreResult = await paginatedLoader.fetchMore();
 
       await intializeFuture;
@@ -180,9 +179,7 @@ void main() {
 
     test('should return already fetching while fetching more', () async {
       await paginatedLoader.initialize();
-      expect(paginatedLoader.isFetching, false);
       final paginatedLoaderFuture = paginatedLoader.fetchMore();
-      expect(paginatedLoader.isFetching, true);
       final otherfetchMoreResult = await paginatedLoader.fetchMore();
       await paginatedLoaderFuture;
 
@@ -509,6 +506,33 @@ void main() {
       );
 
       await verifyLoaderWithConfiguration(paginatedLoader);
+    });
+  });
+
+  group('test state of loader', () {
+    test('state progression while fetching more', () async {
+      final paginatedLoader = MockStaleMatePaginatedLoader(
+        paginationConfig: StaleMatePagePagination(
+          pageSize: 10,
+        ),
+      );
+
+      expect(paginatedLoader.state.localStatus, StaleMateStatus.idle);
+      expect(paginatedLoader.state.remoteStatus, StaleMateStatus.idle);
+
+      await paginatedLoader.initialize();
+
+      expect(paginatedLoader.state.localStatus, StaleMateStatus.error);
+      expect(paginatedLoader.state.remoteStatus, StaleMateStatus.loaded);
+
+      final fetchMoreFuture = paginatedLoader.fetchMore();
+      expect(paginatedLoader.state.remoteStatus, StaleMateStatus.loading);
+      expect(paginatedLoader.state.fetchReason, StaleMateFetchReason.fetchMore);
+
+      await fetchMoreFuture;
+
+      expect(paginatedLoader.state.remoteStatus, StaleMateStatus.loaded);
+      expect(paginatedLoader.state.fetchReason, StaleMateFetchReason.fetchMore);
     });
   });
 }

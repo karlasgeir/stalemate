@@ -2,6 +2,7 @@ import 'package:async/async.dart';
 import 'package:logger/logger.dart';
 import 'package:rxdart/subjects.dart';
 
+import '../exceptions/no_local_data_exception.dart';
 import '../logging/stalemate_log_level.dart';
 import '../logging/tagged_logging_printer.dart';
 import '../stalemate_refresher/stalemate_refresh_result.dart';
@@ -10,8 +11,11 @@ import '../stalemate_refresher/stalemate_refresh_config.dart';
 import '../stalemate_refresher/stalemate_refresher.dart';
 import '../stalemate_registry/stalemate_registry.dart';
 import '../stalemate_paginated_loader/stalemate_pagination_config.dart';
+import 'stalemate_loader_state.dart';
+import 'stalemate_state_manager.dart';
 
 export '../logging/stalemate_log_level.dart';
+export 'stalemate_loader_state.dart';
 
 part '../stalemate_paginated_loader/stalemate_paginated_loader.dart';
 
@@ -116,6 +120,8 @@ abstract class StaleMateLoader<T> {
   /// The refresher that will be used to refresh the data
   late final StaleMateRefresher<T> _refresher;
 
+  late final StaleMateStateManager _stateManager;
+
   /// Creates a new data loader
   ///
   /// The data loader registers itself in the [StaleMateRegistry] when it is created
@@ -143,6 +149,11 @@ abstract class StaleMateLoader<T> {
     // Initialize the logger
     setLogLevel(logLevel ?? StaleMateRegistry.instance.defaultLogLevel);
 
+    // Initialize the state manager
+    _stateManager = StaleMateStateManager(
+      logger: _logger,
+    );
+
     // Initialize the subject and the refresher
     _subject = BehaviorSubject();
     // Initialize the refresher
@@ -152,6 +163,7 @@ abstract class StaleMateLoader<T> {
     );
 
     _logger.d('Registered in registry');
+
     // Register this data loader in the registry
     StaleMateRegistry.instance.register(this);
   }
@@ -172,6 +184,29 @@ abstract class StaleMateLoader<T> {
   ///
   /// This returns true if the data stream is empty or if the data stream is not available yet.
   bool get isEmpty => value == emptyValue;
+
+  /// Indicates what the current state of the data loader is
+  StaleMateLoaderState get state => _stateManager.state;
+
+  /// Adds a state listener to the data loader
+  ///
+  /// The state listener will be called whenever the state of the data loader changes
+  ///
+  /// Arguments:
+  /// - [listener] : The listener that will be called when the state changes
+  void addStateListener(StateListener listener) {
+    _stateManager.addListener(listener);
+  }
+
+  /// Removes a state listener from the data loader
+  ///
+  /// The state listener will no longer be called when the state of the data loader changes
+  ///
+  /// Arguments:
+  /// - [listener] : The listener that will be removed
+  void removeStateListener(StateListener listener) {
+    _stateManager.removeListener(listener);
+  }
 
   /// Retrieves the data from the local source
   ///
@@ -337,25 +372,15 @@ abstract class StaleMateLoader<T> {
   /// Ignores any errors that occur
   ///
   /// Returns true if local data was loaded, false if not
-  Future<bool> _loadLocalData() async {
-    try {
-      _logger.d('Loading local data...');
-      final localData = await getLocalData();
-      if (localData != emptyValue) {
-        _subject.add(localData);
-        _logger.i(
-          'Local data loaded and added to stream',
-        );
-        _logger.d('Local data loaded:');
-        _logger.d(localData);
-        return true;
-      }
-      _logger.i('No local data was empty');
-      return false;
-    } catch (e, stackTrace) {
-      _logger.e('Failed to load local data', e, stackTrace);
-      return false;
+  Future<T> _loadLocalData() async {
+    final localData = await getLocalData();
+
+    if (localData != emptyValue) {
+      _subject.add(localData);
+      return localData;
     }
+
+    throw NoLocalDataException('Retrieved local data is empty');
   }
 
   /// Loads remote data and adds it to the stream
@@ -384,8 +409,28 @@ abstract class StaleMateLoader<T> {
   /// - Loads local data
   /// - If [updateOnInit] is true or there is no local data available, loads remote data
   Future<void> initialize() async {
-    _logger.d('Initializing...');
-    await _loadLocalData();
+    _stateManager.setLocalState(StaleMateStatus.loading);
+
+    try {
+      final localData = await _loadLocalData();
+
+      _stateManager.setLocalState(StaleMateStatus.loaded);
+
+      _logger.d(localData);
+    } catch (error, stackTrace) {
+      _stateManager.setLocalState(
+        StaleMateStatus.error,
+        error: error,
+      );
+
+      _logger.e(
+        'Failed to load local data',
+        error,
+        stackTrace,
+      );
+    }
+
+    // Load remote data if there is no local data available or updateOnInit is true
     if (updateOnInit || isEmpty) {
       if (isEmpty) {
         _logger
@@ -395,7 +440,38 @@ abstract class StaleMateLoader<T> {
           'Local data available after initialization, but updateOnInit is true, refreshing data',
         );
       }
-      await _refresher.refresh();
+
+      _stateManager.setRemoteState(
+        StaleMateStatus.loading,
+        fetchReason: StaleMateFetchReason.initial,
+      );
+
+      // Loads the remote data
+      final refreshResult = await _refresher.refresh();
+
+      // Successful load sets the state to loaded with remote data
+      if (refreshResult.isSuccess) {
+        _logger.i('Got remote data after initialization');
+
+        _stateManager.setRemoteState(
+          StaleMateStatus.loaded,
+          fetchReason: StaleMateFetchReason.initial,
+        );
+      }
+      // Failed load sets the state to error
+      else if (refreshResult.isFailure) {
+        _logger.e(
+          'Failed to get remote data after initialization',
+          refreshResult.error,
+          StackTrace.current,
+        );
+
+        _stateManager.setRemoteState(
+          StaleMateStatus.error,
+          fetchReason: StaleMateFetchReason.initial,
+          error: refreshResult.error,
+        );
+      }
     } else {
       _logger.i(
         'Local data available after initialization, updateOnInit is false, not refreshing data',
@@ -411,16 +487,39 @@ abstract class StaleMateLoader<T> {
   /// - [StaleMateRefreshStatus.failure] if the refresh failed
   /// - [StaleMateRefreshStatus.alreadyRefreshing] if the refresh was already in progress
   Future<StaleMateRefreshResult<T>> refresh() async {
-    _logger.i('Refreshing data...');
+    // Only allow the refresh to be started if the loader is not already loading data
+    // If the loader is fetching more, allow the refresh to be started, the fetch more will be cancelled
+    if (state.loading && state.fetchReason != StaleMateFetchReason.fetchMore) {
+      _logger.i('Already loading data data, not refreshing');
+      return StaleMateRefreshResult.alreadyRefreshing(
+        refreshInitiatedAt: DateTime.now(),
+        refreshFinishedAt: DateTime.now(),
+      );
+    }
+
+    _stateManager.setRemoteState(
+      StaleMateStatus.loading,
+      fetchReason: StaleMateFetchReason.refresh,
+    );
+
     final refreshResult = await _refresher.refresh();
     if (refreshResult.isFailure) {
+      _stateManager.setRemoteState(
+        StaleMateStatus.error,
+        fetchReason: StaleMateFetchReason.refresh,
+        error: refreshResult.error,
+      );
+
       _logger.e(
         'Failed to refresh data',
         refreshResult.error,
         StackTrace.current,
       );
     } else {
-      _logger.i('Data refreshed successfully');
+      _stateManager.setRemoteState(
+        StaleMateStatus.loaded,
+        fetchReason: StaleMateFetchReason.refresh,
+      );
     }
     _logger.d(refreshResult);
 
@@ -434,9 +533,8 @@ abstract class StaleMateLoader<T> {
   Future<void> reset() async {
     _logger.i('Resetting data...');
     await removeLocalData();
-    _logger.d('Local data removed');
-    _logger.d('Adding empty value to stream');
     _subject.add(emptyValue);
+    _stateManager.reset();
   }
 
   /// Sets the log level of the loader
@@ -468,7 +566,7 @@ abstract class StaleMateLoader<T> {
   /// - Disposes the refresher
   /// - Unregisters the loader from the registry
   close() {
-    _logger.d('Closing stream');
+    _logger.d('Closing loader');
     _subject.close();
     _refresher.dispose();
     _logger.d('Unregistering from registry');
