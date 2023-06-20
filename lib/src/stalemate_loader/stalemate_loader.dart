@@ -1,7 +1,6 @@
 import 'package:async/async.dart';
 import 'package:logger/logger.dart';
 import 'package:rxdart/subjects.dart';
-import 'package:synchronized/synchronized.dart';
 
 import '../exceptions/no_local_data_exception.dart';
 import '../logging/stalemate_log_level.dart';
@@ -13,6 +12,7 @@ import '../stalemate_refresher/stalemate_refresher.dart';
 import '../stalemate_registry/stalemate_registry.dart';
 import '../stalemate_paginated_loader/stalemate_pagination_config.dart';
 import 'stalemate_loader_state.dart';
+import 'stalemate_state_manager.dart';
 
 export '../logging/stalemate_log_level.dart';
 export 'stalemate_loader_state.dart';
@@ -120,15 +120,7 @@ abstract class StaleMateLoader<T> {
   /// The refresher that will be used to refresh the data
   late final StaleMateRefresher<T> _refresher;
 
-  /// Indicates what the current state of the data loader is
-  StaleMateLoaderState _state = StaleMateLoaderState.initial();
-
-  /// Holds state listeners that will be called when the state changes
-  final List<
-      Function(
-        StaleMateLoaderState state,
-        StaleMateLoaderState prevState,
-      )> _stateListeners = [];
+  late final StaleMateStateManager _stateManager;
 
   /// Creates a new data loader
   ///
@@ -157,6 +149,11 @@ abstract class StaleMateLoader<T> {
     // Initialize the logger
     setLogLevel(logLevel ?? StaleMateRegistry.instance.defaultLogLevel);
 
+    // Initialize the state manager
+    _stateManager = StaleMateStateManager(
+      logger: _logger,
+    );
+
     // Initialize the subject and the refresher
     _subject = BehaviorSubject();
     // Initialize the refresher
@@ -166,6 +163,7 @@ abstract class StaleMateLoader<T> {
     );
 
     _logger.d('Registered in registry');
+
     // Register this data loader in the registry
     StaleMateRegistry.instance.register(this);
   }
@@ -188,33 +186,7 @@ abstract class StaleMateLoader<T> {
   bool get isEmpty => value == emptyValue;
 
   /// Indicates what the current state of the data loader is
-  StaleMateLoaderState get state => _state;
-
-  final _stateLock = Lock();
-
-  /// Changes the state of the data loader
-  ///
-  /// This method should only be used internally by the data loader
-  ///
-  /// Arguments:
-  /// - [state] : The new state of the data loader
-  void _setState(StaleMateLoaderState newState) async {
-    await _stateLock.synchronized(() {
-      final prevState = _state;
-      _state = newState;
-
-      // Call the state listeners
-      for (var listener in _stateListeners) {
-        try {
-          listener(newState, prevState);
-        } catch (e, stackTrace) {
-          _logger.e('Error while calling state listener', e, stackTrace);
-        }
-      }
-
-      _logger.d('State changed to $newState');
-    });
-  }
+  StaleMateLoaderState get state => _stateManager.state;
 
   /// Adds a state listener to the data loader
   ///
@@ -222,12 +194,8 @@ abstract class StaleMateLoader<T> {
   ///
   /// Arguments:
   /// - [listener] : The listener that will be called when the state changes
-  void addStateListener(
-      Function(
-        StaleMateLoaderState state,
-        StaleMateLoaderState prevState,
-      ) listener) {
-    _stateListeners.add(listener);
+  void addStateListener(StateListener listener) {
+    _stateManager.addListener(listener);
   }
 
   /// Removes a state listener from the data loader
@@ -236,12 +204,8 @@ abstract class StaleMateLoader<T> {
   ///
   /// Arguments:
   /// - [listener] : The listener that will be removed
-  void removeStateListener(
-      Function(
-        StaleMateLoaderState state,
-        StaleMateLoaderState prevState,
-      ) listener) {
-    _stateListeners.remove(listener);
+  void removeStateListener(StateListener listener) {
+    _stateManager.removeListener(listener);
   }
 
   /// Retrieves the data from the local source
@@ -445,26 +409,19 @@ abstract class StaleMateLoader<T> {
   /// - Loads local data
   /// - If [updateOnInit] is true or there is no local data available, loads remote data
   Future<void> initialize() async {
-    _setState(state.copyWithLocalStatus(
-      StaleMateStatus.loading,
-    ));
+    _stateManager.setLocalState(StaleMateStatus.loading);
 
     try {
-      _logger.i('Loading local data...');
-
       final localData = await _loadLocalData();
 
-      _setState(state.copyWithLocalStatus(
-        StaleMateStatus.loaded,
-      ));
+      _stateManager.setLocalState(StaleMateStatus.loaded);
 
-      _logger.i('Got local data after initialization');
       _logger.d(localData);
     } catch (error, stackTrace) {
-      _setState(state.copyWithLocalStatus(
+      _stateManager.setLocalState(
         StaleMateStatus.error,
         error: error,
-      ));
+      );
 
       _logger.e(
         'Failed to load local data',
@@ -484,10 +441,10 @@ abstract class StaleMateLoader<T> {
         );
       }
 
-      _setState(state.copyWithRemoteStatus(
+      _stateManager.setRemoteState(
         StaleMateStatus.loading,
         fetchReason: StaleMateFetchReason.initial,
-      ));
+      );
 
       // Loads the remote data
       final refreshResult = await _refresher.refresh();
@@ -496,10 +453,10 @@ abstract class StaleMateLoader<T> {
       if (refreshResult.isSuccess) {
         _logger.i('Got remote data after initialization');
 
-        _setState(state.copyWithRemoteStatus(
+        _stateManager.setRemoteState(
           StaleMateStatus.loaded,
           fetchReason: StaleMateFetchReason.initial,
-        ));
+        );
       }
       // Failed load sets the state to error
       else if (refreshResult.isFailure) {
@@ -509,11 +466,11 @@ abstract class StaleMateLoader<T> {
           StackTrace.current,
         );
 
-        _setState(state.copyWithRemoteStatus(
+        _stateManager.setRemoteState(
           StaleMateStatus.error,
           fetchReason: StaleMateFetchReason.initial,
           error: refreshResult.error,
-        ));
+        );
       }
     } else {
       _logger.i(
@@ -540,18 +497,18 @@ abstract class StaleMateLoader<T> {
       );
     }
 
-    _setState(state.copyWithRemoteStatus(
+    _stateManager.setRemoteState(
       StaleMateStatus.loading,
       fetchReason: StaleMateFetchReason.refresh,
-    ));
+    );
 
     final refreshResult = await _refresher.refresh();
     if (refreshResult.isFailure) {
-      _setState(state.copyWithRemoteStatus(
+      _stateManager.setRemoteState(
         StaleMateStatus.error,
         fetchReason: StaleMateFetchReason.refresh,
         error: refreshResult.error,
-      ));
+      );
 
       _logger.e(
         'Failed to refresh data',
@@ -559,10 +516,10 @@ abstract class StaleMateLoader<T> {
         StackTrace.current,
       );
     } else {
-      _setState(state.copyWithRemoteStatus(
+      _stateManager.setRemoteState(
         StaleMateStatus.loaded,
         fetchReason: StaleMateFetchReason.refresh,
-      ));
+      );
     }
     _logger.d(refreshResult);
 
@@ -576,11 +533,8 @@ abstract class StaleMateLoader<T> {
   Future<void> reset() async {
     _logger.i('Resetting data...');
     await removeLocalData();
-    _logger.d('Local data removed');
-    _logger.d('Adding empty value to stream');
     _subject.add(emptyValue);
-
-    _setState(StaleMateLoaderState.initial());
+    _stateManager.reset();
   }
 
   /// Sets the log level of the loader
@@ -612,7 +566,7 @@ abstract class StaleMateLoader<T> {
   /// - Disposes the refresher
   /// - Unregisters the loader from the registry
   close() {
-    _logger.d('Closing stream');
+    _logger.d('Closing loader');
     _subject.close();
     _refresher.dispose();
     _logger.d('Unregistering from registry');
