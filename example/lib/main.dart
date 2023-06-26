@@ -1,4 +1,4 @@
-import 'package:example/pages/initialization_refresh/initalization_refresh.dart';
+import 'package:example/pages/simple_usage/simple_usage.dart';
 import 'package:flutter/material.dart';
 
 import 'pages/home_page/home_page.dart';
@@ -14,8 +14,8 @@ void main() {
       ),
       home: const HomePage(), // becomes the route named '/'
       routes: <String, WidgetBuilder>{
-        '/initialization_refresh': (BuildContext context) =>
-            const InitializationRefresh(),
+        '/simple_usage': (BuildContext context) =>
+            const SimpleUsage(),
         'paginated_loader': (context) => const PaginatedLoaderPage(),
       },
     ),

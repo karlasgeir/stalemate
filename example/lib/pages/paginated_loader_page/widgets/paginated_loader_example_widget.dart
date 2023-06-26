@@ -1,4 +1,4 @@
-import 'package:example/pages/paginated_loader_page/data/loaders/paginated_example_loader.dart';
+import 'package:example/pages/paginated_loader_page/data/handlers/paginated_example_handler.dart';
 import 'package:example/services/snack_bar_service.dart';
 import 'package:example/widgets/app_page_button.dart';
 import 'package:example/widgets/app_page_buttons.dart';
@@ -47,8 +47,10 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
   /// Used to scroll to the top of the list when refreshing
   final ScrollController scrollController = ScrollController();
 
+  final PaginatedExampleHandler handler = PaginatedExampleHandler();
+
   /// This is the loader that will be used throughout the page
-  late PaginatedExampleLoader loader;
+  late StaleMatePaginatedLoader<String, PaginatedExampleHandler> loader;
 
   /// This is just a utility service to show snack bars
   late SnackBarService snackBarService;
@@ -70,7 +72,8 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
     });
 
     // Create the loader with the pagination configuration
-    loader = PaginatedExampleLoader(
+    loader = StaleMatePaginatedLoader(
+      handler: handler,
       paginationConfig: widget.paginationConfig,
       // The loader will use the [StaleMateLogLevel.debug] log level
       // This is just to show the logs in the console of the example app
@@ -147,7 +150,7 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
     // This would not be done in a real app, it is just to show the error handling
     // of the loader, the loader would through when a remote request fails
     if (withError) {
-      loader.shouldThrowError = true;
+      handler.shouldThrowError = true;
     }
 
     // The fetchMore method can be awaited to know when the loader has finished
@@ -157,7 +160,7 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
     final fetchMoreResult = await loader.fetchMore();
 
     // reset the error flag
-    loader.shouldThrowError = false;
+    handler.shouldThrowError = false;
 
     // The [StaleMateFetchMoreResult.on] is a utility method that can be used to handle
     // the result of the fetch more operation, but it is a simplified version of the
@@ -214,7 +217,7 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return StaleMateBuilder<List<String>>(
+    return StaleMateBuilder<List<String>, PaginatedExampleHandler>(
       loader: loader,
       builder: (context, data) {
         return data.when(

@@ -7,15 +7,70 @@ import 'package:stalemate/src/stalemate_registry/stalemate_registry.dart';
 
 import 'stalemate_registry_test.mocks.dart';
 
-class StaleMateLoaderImpl1 extends StaleMateLoader<String> {
-  StaleMateLoaderImpl1() : super(emptyValue: "");
+class StaleMateHandlerImpl1 extends StaleMateHandler<String> {
+  @override
+  String get emptyValue => "";
+
+  @override
+  Future<String> getLocalData() {
+    return Future.value("local data");
+  }
+
+  @override
+  Future<String> getRemoteData() {
+    return Future.value("remote data");
+  }
+
+  @override
+  Future<void> storeLocalData(String data) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> removeLocalData() {
+    return Future.value();
+  }
 }
 
-class StaleMateLoaderImpl2 extends StaleMateLoader<int> {
-  StaleMateLoaderImpl2() : super(emptyValue: 0);
+class StaleMateHandlerImpl2 extends StaleMateHandler<int> {
+  @override
+  int get emptyValue => -1;
+
+  @override
+  Future<int> getLocalData() {
+    return Future.value(1);
+  }
+
+  @override
+  Future<int> getRemoteData() {
+    return Future.value(1);
+  }
+
+  @override
+  Future<void> storeLocalData(int data) {
+    return Future.value();
+  }
+
+  @override
+  Future<void> removeLocalData() {
+    return Future.value();
+  }
 }
 
-@GenerateMocks([StaleMateLoaderImpl1, StaleMateLoaderImpl2])
+class StaleMateLoader1 extends StaleMateLoader<String, StaleMateHandlerImpl1> {
+  StaleMateLoader1() : super(handler: StaleMateHandlerImpl1());
+}
+
+class StaleMateLoader2 extends StaleMateLoader<int, StaleMateHandlerImpl2> {
+  StaleMateLoader2() : super(handler: StaleMateHandlerImpl2());
+}
+
+@GenerateMocks([
+  StaleMateLoader1,
+  StaleMateLoader2,
+  StaleMateHandlerImpl1,
+  StaleMateHandlerImpl2
+])
 void main() {
   final mockRefreshSuccessResult = StaleMateRefreshResult<String>.success(
     data: "refreshed data",
@@ -47,7 +102,7 @@ void main() {
 
   group('StaleMateRegistry registration', () {
     test('register and unregister loader', () {
-      final loader = MockStaleMateLoaderImpl1();
+      final loader = MockStaleMateLoader1();
       expect(StaleMateRegistry.instance.numberOfLoaders, 0);
       StaleMateRegistry.instance.register(loader);
       expect(StaleMateRegistry.instance.numberOfLoaders, 1);
@@ -56,7 +111,7 @@ void main() {
     });
 
     test('register and unregister loader twice', () {
-      final loader = MockStaleMateLoaderImpl1();
+      final loader = MockStaleMateLoader1();
       expect(StaleMateRegistry.instance.numberOfLoaders, 0);
       StaleMateRegistry.instance.register(loader);
       expect(StaleMateRegistry.instance.numberOfLoaders, 1);
@@ -69,8 +124,8 @@ void main() {
     });
 
     test('Unregister loader that was not registered', () {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader2();
 
       StaleMateRegistry.instance.register(loader1);
 
@@ -82,9 +137,9 @@ void main() {
 
   group('StaleMateRegistry all loaders', () {
     test('get all loaders', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
@@ -94,9 +149,9 @@ void main() {
     });
 
     test('refresh all loaders', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       when(loader1.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
@@ -122,9 +177,9 @@ void main() {
     });
 
     test('refresh all loaders with one error', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       when(loader1.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
@@ -150,9 +205,9 @@ void main() {
     });
 
     test('refresh all loaders with all errors', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       when(loader1.refresh())
           .thenAnswer((_) => Future.value(mockRefreshFailureResult));
@@ -178,9 +233,9 @@ void main() {
     });
 
     test('clear all loaders', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
@@ -196,28 +251,27 @@ void main() {
 
   group('StaleMateRegistry loaders of type', () {
     test('getLoaders of a specific type', () {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      final loaders =
-          StaleMateRegistry.instance.getLoaders<MockStaleMateLoaderImpl1>();
+      final loaders = StaleMateRegistry.instance
+          .getLoadersWithHandler<String, StaleMateHandlerImpl1>();
 
       expect(loaders.length, 2);
-      expect(
+      expect(loaders.every((loader) =>
           // ignore: unnecessary_type_check
-          loaders.every((loader) => loader is MockStaleMateLoaderImpl1),
-          true);
+          loader is StaleMateLoader<String, StaleMateHandlerImpl1>), true);
     });
 
     test('refresh loaders of a specific type', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       when(loader1.refresh())
           .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
@@ -231,7 +285,7 @@ void main() {
       StaleMateRegistry.instance.register(loader3);
 
       final refreshResults = await StaleMateRegistry.instance
-          .refreshLoaders<MockStaleMateLoaderImpl1>();
+          .refreshLoadersWithHandler<String, StaleMateHandlerImpl1>();
 
       for (var result in refreshResults) {
         expect(result.isSuccess, true);
@@ -243,15 +297,16 @@ void main() {
     });
 
     test('clear all loaders of a specific type', () async {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      await StaleMateRegistry.instance.resetLoaders<MockStaleMateLoaderImpl1>();
+      await StaleMateRegistry.instance
+          .resetLoadersWithHandler<String, StaleMateHandlerImpl1>();
 
       verify(loader1.reset()).called(1);
       verify(loader2.reset()).called(1);
@@ -261,111 +316,32 @@ void main() {
 
   group('StaleMateRegistry first loaders of type', () {
     test('has loader of type returns true when it has the loader', () {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl2();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
+      final loader3 = MockStaleMateLoader2();
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
       StaleMateRegistry.instance.register(loader3);
 
-      expect(StaleMateRegistry.instance.hasLoader<MockStaleMateLoaderImpl1>(),
+      expect(
+          StaleMateRegistry.instance
+              .hasLoaderWithHandler<String, StaleMateHandlerImpl1>(),
           true);
     });
 
     test('has loader of type returns false when it does not have the loader',
         () {
-      final loader1 = MockStaleMateLoaderImpl1();
-      final loader2 = MockStaleMateLoaderImpl1();
+      final loader1 = MockStaleMateLoader1();
+      final loader2 = MockStaleMateLoader1();
 
       StaleMateRegistry.instance.register(loader1);
       StaleMateRegistry.instance.register(loader2);
 
-      expect(StaleMateRegistry.instance.hasLoader<MockStaleMateLoaderImpl2>(),
+      expect(
+          StaleMateRegistry.instance
+              .hasLoaderWithHandler<int, StaleMateHandlerImpl2>(),
           false);
     });
-
-    test('get first loader of type returns the first loader of the type', () {
-      final loader1 = MockStaleMateLoaderImpl2();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl1();
-      final loader4 = MockStaleMateLoaderImpl2();
-
-      StaleMateRegistry.instance.register(loader1);
-      StaleMateRegistry.instance.register(loader2);
-      StaleMateRegistry.instance.register(loader3);
-      StaleMateRegistry.instance.register(loader4);
-
-      final loader =
-          StaleMateRegistry.instance.getFirstLoader<MockStaleMateLoaderImpl1>();
-
-      expect(loader, loader2);
-    });
-
-    test(
-        'get first loader of type returns null when there is no loader of the type',
-        () {
-      final loader1 = MockStaleMateLoaderImpl2();
-      final loader2 = MockStaleMateLoaderImpl2();
-
-      StaleMateRegistry.instance.register(loader1);
-      StaleMateRegistry.instance.register(loader2);
-
-      final loader =
-          StaleMateRegistry.instance.getFirstLoader<MockStaleMateLoaderImpl1>();
-
-      expect(loader, null);
-    });
-
-    test('refresh first loader of type refreshes the first loader of the type',
-        () async {
-      final loader1 = MockStaleMateLoaderImpl2();
-      final loader2 = MockStaleMateLoaderImpl1();
-      final loader3 = MockStaleMateLoaderImpl1();
-      final loader4 = MockStaleMateLoaderImpl2();
-
-      when(loader1.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshIntResult));
-      when(loader2.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
-      when(loader3.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshSuccessResult));
-      when(loader4.refresh())
-          .thenAnswer((_) => Future.value(mockRefreshIntResult));
-
-      StaleMateRegistry.instance.register(loader1);
-      StaleMateRegistry.instance.register(loader2);
-      StaleMateRegistry.instance.register(loader3);
-      StaleMateRegistry.instance.register(loader4);
-
-      await StaleMateRegistry.instance
-          .refreshFirstLoader<MockStaleMateLoaderImpl1>();
-
-      verifyNever(loader1.refresh());
-      verify(loader2.refresh()).called(1);
-      verifyNever(loader3.refresh());
-      verifyNever(loader4.refresh());
-    });
-  });
-
-  test('clear first loader of type clears the first loader of the type',
-      () async {
-    final loader1 = MockStaleMateLoaderImpl2();
-    final loader2 = MockStaleMateLoaderImpl1();
-    final loader3 = MockStaleMateLoaderImpl1();
-    final loader4 = MockStaleMateLoaderImpl2();
-
-    StaleMateRegistry.instance.register(loader1);
-    StaleMateRegistry.instance.register(loader2);
-    StaleMateRegistry.instance.register(loader3);
-    StaleMateRegistry.instance.register(loader4);
-
-    await StaleMateRegistry.instance
-        .resetFirstLoader<MockStaleMateLoaderImpl1>();
-
-    verifyNever(loader1.reset());
-    verify(loader2.reset()).called(1);
-    verifyNever(loader3.reset());
-    verifyNever(loader4.reset());
   });
 }

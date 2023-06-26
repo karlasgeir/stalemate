@@ -8,7 +8,7 @@ StaleMate addresses key challenges faced in Flutter data management, such as ini
 
 **The current examples are:**
 
-- **Example 1:** Simple Data Loading: This example details the usage of the core functionality of the StaleMate library with a custom loader, SimpleStaleMateLoader. This loader retrieves data from either a local source or a remote source and demonstrates initial loading, refreshing, and error handling.
+- **Example 1:** Simple Usage: This example details the usage of the core functionality of the StaleMate library with a custom loader, SimpleStaleMateLoader. This loader retrieves data from either a local source or a remote source and demonstrates initial loading, refreshing, and error handling.
 - **Example 2:** Using StaleMatePaginatedLoader to paginate data: This example outlines the process of handling paginated data with the StaleMatePaginatedLoader. This is especially useful when dealing with large datasets that need to be paginated
 
 ## Example 1: Simple Data Loading
@@ -17,80 +17,84 @@ This example demonstrates the core functionality of the StaleMate library using 
 
 In this example, we create a loader called SimpleStaleMateLoader, an extension of the StaleMateLoader with a String datatype. This loader mimics both local and remote data sources.
 
-You can find the full implementation of **SimpleDataLoader** here: [SimpleDataLoader](lib/pages/initialization_refresh/loaders/simple_stale_mate_loader.dart)
+You can find the full implementation of **SimpleStaleMateHandler** here: [SimpleStaleMateHandler](lib/pages/simple_usage/handlers/simple_stale_mate_handler.dart)
 
-Here is a simplified version:
+Here is a slightly simplified version:
 
 ```dart
-import 'package:stalemate/stalemate.dart';
-
-
-class SimpleStaleMateLoader extends StaleMateLoader<String> {
-  // A varible that holds the "local data"
-  // This is to simulate storing the data locally
+class SimpleStaleMateHandler extends StaleMateHandler<String> {
   String _localData = 'initial local data';
+  int timesUpdatedFromRemote = 0;
 
-  SimpleStaleMateLoader() : super(
-          // The empty value is used to determine if the data is empty.
-          // The empty value depends on the data type
-          // Since the data type is a String, it is an empty string,
-          // For arrays use empty array, for nullable values null, etc.
-          emptyValue: '',
-        );
+  /// You need to provide the empty value,
+  /// in this case an empty string
+  @override
+  String get emptyValue => '';
 
-  /// This is where you retrieve your local data
-  /// Just override this method and return the data
+  /// This is the method that is called to get the local data.
+  ///
+  /// Usually this would be used to call a local database or cache.
+  ///
+  /// In this case, it just simulates a local data source by returning
+  /// the `_localData` property.
   @override
   Future<String> getLocalData() async {
-    // Here you could retrieve the local data, using Hive, Isar, Shared preferences, etc.
-    // For this example, we just return the local data variable
     return _localData;
   }
 
-
-  /// This is where you retrieve your remote data
-  /// just override this methodto retrieve the remote data
+  /// This is the method that is called to get the remote data.
+  ///
+  /// Usually this would be used to call an API.
+  ///
+  /// In this case, it just simulates a remote data source by returning
+  /// a string after a 5 second delay.
   @override
   Future<String> getRemoteData() async {
-    // Here you would call any remote data, retrieving the data from the server
-
-    // To simulate the data retrieval we can just delay and return the data
-    Future.wait(const Duration(seconds: 3));
-    return 'Remote data';
+    await Future.delayed(const Duration(seconds: 5));
+    return 'Remote data after ${++timesUpdatedFromRemote} updates';
   }
 
-  /// This is where the local data is stored
-  /// Just override this method to store the
-  /// local data
+  /// This is the method that is called to store the local data.
+  ///
+  /// Usually this would be used to store the data in a local database or cache.
+  ///
+  /// In this case, it just simulates a local data source by setting
+  /// the `_localData` property.
   @override
   Future<void> storeLocalData(String data) async {
-    // Here you would store the local data, using Hive, Isar, Shared preferences, etc.
-    // For this example, we just set the local data
     _localData = data;
   }
 
-  /// Here you would clear the local data
-  /// It is called when the loader is reset
-  /// and you want to clear all remaining
-  /// data from the storage
+  /// This is the method that is called to remove the local data.
+  ///
+  /// Usually this would be used to remove the data from a local database or cache.
+  ///
+  /// In this case, it just simulates a local data source by setting
+  /// the `_localData` property to an empty string.
   @override
   Future<void> removeLocalData() async {
-   /// Here you would remove the local data from Hive, Isar, Shared preferences, etc.
-   // For this example, we just set the local data to empty
-   _localData = '';
+    timesUpdatedFromRemote = 0;
+    _localData = '';
   }
 }
+
 ```
 
-This loader is used in our InitializationRefresh page, which shows different UI states based on the data's state. This demonstrates how to handle initial loads, refreshing, and errors.
+This loader is used in our SimpleUsage page, which shows different UI states based on the data's state. This demonstrates how to handle initial loads, refreshing, and errors.
 
-For the full implementation, see: [InitializationRefresh](lib/pages/initialization_refresh/initalization_refresh.dart).
+For the full implementation, see: [SimpleUsage](lib/pages/simple_usage/simple_usage.dart).
 
-Here is a simplified version of the widget
+Here is stripped down version:
 
 ```dart
+// ...
+// Widget implementation
+// ...
+//
 class _InitializationRefreshState extends State<InitializationRefresh> {
-  final loader = SimpleStaleMateLoader();
+  final StaleMateLoader<String, SimpleStaleMateHandler> loader = StaleMateLoader(
+      handler: SimpleStaleMateHandler(),
+    );
 
   /// When the widget is disposed of, the loader should be closed
   @override
@@ -178,41 +182,35 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
 
 ## Example 2: Using StaleMatePaginatedLoader to paginate data
 
-This example demonstrates the use of **StaleMatePaginatedLoader** in a typical Flutter widget. The loader helps to manage paginated data in your application.
+This example demonstrates the use of **StaleMatePaginatedHandlerMixin** and the **StaleMatePaginatedLoader** in a typical Flutter widget. The loader helps to manage paginated data in your application.
 
-We begin by creating a loader that implements data loading and pagination.
+We begin by creating a handler that configures how to fetch the paginated data
 
 For the full implementation, see: [PaginatedExampleLoader](lib/pages/paginated_loader_page/data/loaders/paginated_example_loader.dart)
 
 Here is a simplified version:
 
 ```dart
-class PaginatedExampleLoader extends StaleMatePaginatedLoader<String> {
-  /// A remote datasource that can handle paginated data
-  final RemoteDatasource remoteDatasource;
+class PaginatedExampleHandler extends RemoteOnlyStaleMateHandler<List<String>>
+    // Use the PaginatedHandlerMixin to get the pagination functionality
+    with
+        PaginatedHandlerMixin<String> {
 
-  PaginatedExampleLoader({
-    required this.remoteDatasource,
-  }) : (
-    // Configure what kind of pagination the server supports
-    // Built in pagination options:
-    // - StaleMatePagePagination: Page based pagination
-    // - StaleMateOffsetLimitPagination : Offset/limit based pagination
-    // - StaleMateCursorPagination: Cursor based pagination
-    paginationConfig: StaleMatePagePagination(
-        // Size of each page
-        pageSize: 10,
-        // Indicates whether the first page is 0 or 1
-        zeroBasedIndexing: false,
-    )
-  );
+  final PaginatedExampleRemoteDatasource _remoteDatasource =
+      PaginatedExampleRemoteDatasource();
 
-  /// Override the getRemotePaginated data
+  /// Provides an empty value for when the loader is reset
+  /// and to determine if the loader is empty
+  @override
+  List<String> get emptyValue => [];
+
+   /// Override the getRemotePaginated data
   @override
   Future<List<String>> getRemotePaginatedData(
     Map<String, dynamic> paginationParams,
   ) async {
     // The params received here depend on the pagination config passed
+    // to the Paginated loader
     final page = paginationParams['page'] as int;
     final pageSize = paginationParams['pageSize'] as int;
     return _remoteDatasource.getItems(page, pageSize);
@@ -227,30 +225,22 @@ Here is a simplified example:
 ```dart
 
 class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
-  /// This is the loader that will be used throughout the page
-  PaginatedExampleLoader loader = PaginatedExampleLoader(
+  final StaleMatePaginatedLoader<String, PaginatedExampleHandler> loader = StaleMatePaginatedLoader(
+    handler: PaginatedExampleHandler(
         remoteDatasource: // pass remote datasource
-    );
+    ),
+    paginationConfig: StaleMatePagePagination(
+      pageSize: 10,
+      zeroBasedIndexing: false,
+    ),
+  );
 
-  /// The loader needs to be initialized before it can show data
-  @override
-  void initState() {
-    super.initState();
 
-    loader.initialize();
+  performRefresh() async {
+    // Refreshing is identical to normal [StaleMateLoader]s
+    // Note that, when a paginated loader is reset, the pagination
+    // is reset and it will only have the first page of data
   }
-
-  /// The loader needs to be disposed when the widget is disposed
-  @override
-  void dispose() {
-    loader.close();
-    super.dispose();
-  }
-
-  /// Refreshing is identical to normal [StaleMateLoader]s
-  /// Note that, when a paginated loader is reset, the pagination
-  // is reset and it will only have the first page of data
-  performRefresh();
 
   performFetchMore() async {
     // Call fetch more to load the next page of data
@@ -310,10 +300,12 @@ class _PaginatedLoaderExampleState extends State<PaginatedLoaderExampleWidget> {
     }
   }
 
-  // Same as the normal loader
-  // Note that when a paginated loader is reset,
-  // the pagination is also reset
-  resetLoader()
+
+  resetLoader() {
+    // Same as the normal loader
+    // Note that when a paginated loader is reset,
+    // the pagination is also reset
+  }
 
   @override
   Widget build(BuildContext context) {

@@ -1,37 +1,39 @@
-import 'package:example/pages/initialization_refresh/loaders/simple_stale_mate_loader.dart';
-import 'package:example/pages/initialization_refresh/widgets/initialization_refresh_emty_state.dart';
-import 'package:example/pages/initialization_refresh/widgets/initialization_refresh_error_state.dart';
+import 'package:example/pages/simple_usage/handlers/simple_stale_mate_handler.dart';
+import 'package:example/pages/simple_usage/widgets/simple_usage_empty_state.dart';
+import 'package:example/pages/simple_usage/widgets/simple_usage_error_state.dart';
 import 'package:example/widgets/base_app_page.dart';
 import 'package:flutter/material.dart';
 import 'package:stalemate/stalemate.dart';
 
 import '../../services/snack_bar_service.dart';
-import 'widgets/initialization_refresh_data_state.dart';
-import 'widgets/initialization_refresh_loading_state.dart';
+import 'widgets/simple_usage_data_state.dart';
+import 'widgets/simple_usage_loading_state.dart';
 
-/// This page demonstrates how to use the [SimpleStaleMateLoader] to
-/// initialize and refresh data.
+/// This page demonstrates how to use the [StaleMateLoader] to initialize and refresh data
 ///
-/// The loader is initialized in the [initState] method
-class InitializationRefresh extends StatefulWidget {
-  const InitializationRefresh({super.key});
+/// This example uses a [SimpleStaleMateHandler] to handle the data
+///
+/// See also:
+/// - [SimpleStaleMateHandler]
+/// - [StaleMateLoader]
+/// - [StaleMateHandler]
+class SimpleUsage extends StatefulWidget {
+  const SimpleUsage({super.key});
 
   @override
-  State<InitializationRefresh> createState() => _InitializationRefreshState();
+  State<SimpleUsage> createState() => _SimpleUsageState();
 }
 
-class _InitializationRefreshState extends State<InitializationRefresh> {
-  // The loader that provides the data
-  final loader = SimpleStaleMateLoader(
-    // The log level is set to debug to show the logs in the console
-    // Debug is very verbose and can be turned off if preferred
-    // The default value is [StaleMateLogLevel.none]
-    // Nothing will log in release mode
-    logLevel: StaleMateLogLevel.debug,
-  );
+class _SimpleUsageState extends State<SimpleUsage> {
+  /// The handler that handles the data, in this case a [SimpleStaleMateHandler]
+  final SimpleStaleMateHandler handler = SimpleStaleMateHandler();
+
+  // The loader that provides the data through the handler
+  late StaleMateLoader<String, SimpleStaleMateHandler> loader;
 
   /// State variables to track the state of the loader,
   /// so that the UI can be updated accordingly
+  /// Note, this depends on the UI implementation, it is just a simple example
 
   /// Loader is currently initializing
   bool initializing = false;
@@ -47,6 +49,20 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
 
   /// Combined state variable to track if the loader is currently loading
   bool get isLoading => initializing || refreshing || errorRefreshing;
+
+  @override
+  void initState() {
+    loader = StaleMateLoader(
+      handler: handler,
+      // The log level is set to debug to show the logs in the console
+      // Debug is very verbose and can be turned off if preferred
+      // The default value is [StaleMateLogLevel.none]
+      // Nothing will log in release mode
+      logLevel: StaleMateLogLevel.debug,
+    );
+
+    super.initState();
+  }
 
   /// When the widget is disposed of, the loader should be closed
   @override
@@ -83,15 +99,12 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
   ///
   /// The [StaleMateLoader.refresh] method can be called to refresh the data
   ///
-  /// The [StaleMateLoader.refresh] method can be awaited to know when the loader has finished
-  /// refreshing the data
-  ///
   /// The [StaleMateLoader.refresh] method returns a [StaleMateRefreshResult] object that can be used
   /// to handle the result of the refresh operation
   Future<bool> performRefresh() async {
     final result = await loader.refresh();
 
-    // You can use the [StaleMateRefreshResult.on] method to handle the result of
+    // The [StaleMateRefreshResult.on] method can be used to handle the result of
     // the refresh operation, especially useful if you want to show a message to the user
     result.on(
       success: (data) {
@@ -144,11 +157,11 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
     setState(() {
       errorRefreshing = true;
     });
-    // This is not a method that is available on the loader, it is just a flag
+    // This is not a method that is available on the handler, it is just a flag
     // that is used to simulate an error during the refresh operation
-    loader.shouldThrowError = true;
+    handler.shouldThrowError = true;
     await performRefresh();
-    loader.shouldThrowError = false;
+    handler.shouldThrowError = false;
     setState(() {
       errorRefreshing = false;
     });
@@ -174,7 +187,7 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
       // use the [StaleMateLoader.stream] directly in the UI
       // The StaleMateBuilder widget is just a utility widget that makes it
       // easier to build the UI based on the state of the loader
-      body: StaleMateBuilder<String>(
+      body: StaleMateBuilder<String, SimpleStaleMateHandler>(
         loader: loader,
         builder: (context, data) {
           // The StaleMateBuilder widget provides the data as a [StaleMateData]
@@ -186,11 +199,11 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
           // The [StaleMateData.when] method is also a convinient method to build the UI based on
           // the state of the data
           return data.when(
-            loading: () => InitializationRefreshLoadingState(
+            loading: () => SimpleUsageLoadingState(
               initializeLoader: initializeLoader,
               initializing: initializing,
             ),
-            data: (data) => InitializationRefreshDataState(
+            data: (data) => SimpleUsageDataState(
               refreshLoader: refreshLoader,
               refreshLoaderWithError: refreshLoaderWithError,
               resetLoader: resetLoader,
@@ -200,14 +213,14 @@ class _InitializationRefreshState extends State<InitializationRefresh> {
               isLoading: isLoading,
               data: data,
             ),
-            empty: () => InitializationRefreshEmptyState(
+            empty: () => SimpleUsageEmptyState(
               refreshLoader: refreshLoader,
               refreshLoaderWithError: refreshLoaderWithError,
               refreshing: refreshing,
               errorRefreshing: errorRefreshing,
               isLoading: isLoading,
             ),
-            error: (error) => InitializationRefreshErrorState(
+            error: (error) => SimpleUsageErrorState(
               refreshLoader: refreshLoader,
               resetLoader: resetLoader,
               refreshing: refreshing,

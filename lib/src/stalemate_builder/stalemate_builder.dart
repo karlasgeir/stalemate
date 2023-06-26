@@ -36,12 +36,13 @@ import 'package:stalemate/stalemate.dart';
 ///     error: (error) => Text('Error: $error'),
 /// );
 /// ```
-class StaleMateBuilder<T> extends StatelessWidget {
+class StaleMateBuilder<T, R extends StaleMateHandler<T>>
+    extends StatelessWidget {
   /// The loader that provides the data
   ///
   /// The [StaleMateBuilder] will rebuild the UI based on the state of the data
   /// provided by the [StaleMateLoader.stream]
-  final StaleMateLoader<T> loader;
+  final StaleMateLoader<T, R> loader;
 
   /// The builder that will be called when the data changes
   ///
@@ -69,7 +70,7 @@ class StaleMateBuilder<T> extends StatelessWidget {
       return StaleMateData<T>(
           errorData: snapshot.error, state: StaleMateDataState.error);
     }
-    if (snapshot.hasData && snapshot.data != loader.emptyValue) {
+    if (snapshot.hasData && !loader.isEmpty) {
       return StaleMateData<T>(
           data: snapshot.requireData, state: StaleMateDataState.loaded);
     }

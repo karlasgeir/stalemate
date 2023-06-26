@@ -12,8 +12,8 @@ class HomePage extends StatelessWidget {
       body: ListView(
         children: const [
           HomePageListItem(
-            title: 'Initialization and Refresh',
-            path: '/initialization_refresh',
+            title: 'Simple usage',
+            path: '/simple_usage',
           ),
           HomePageListItem(
             title: 'Paginated Loader',

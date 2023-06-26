@@ -4,14 +4,14 @@ import 'package:example/widgets/app_page_title.dart';
 import 'package:example/widgets/bullet_points.dart';
 import 'package:flutter/material.dart';
 
-class InitializationRefreshEmptyState extends StatelessWidget {
+class SimpleUsageEmptyState extends StatelessWidget {
   final VoidCallback refreshLoader;
   final VoidCallback refreshLoaderWithError;
   final bool refreshing;
   final bool errorRefreshing;
   final bool isLoading;
 
-  const InitializationRefreshEmptyState({
+  const SimpleUsageEmptyState({
     Key? key,
     required this.refreshLoader,
     required this.refreshLoaderWithError,

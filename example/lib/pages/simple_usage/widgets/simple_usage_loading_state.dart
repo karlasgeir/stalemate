@@ -3,11 +3,11 @@ import 'package:example/widgets/app_page_title.dart';
 import 'package:example/widgets/bullet_points.dart';
 import 'package:flutter/widgets.dart';
 
-class InitializationRefreshLoadingState extends StatelessWidget {
+class SimpleUsageLoadingState extends StatelessWidget {
   final VoidCallback initializeLoader;
   final bool initializing;
 
-  const InitializationRefreshLoadingState({
+  const SimpleUsageLoadingState({
     Key? key,
     required this.initializeLoader,
     required this.initializing,

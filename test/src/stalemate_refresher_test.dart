@@ -10,11 +10,11 @@ import 'package:stalemate/src/stalemate_refresher/stalemate_refresher.dart';
 import '../mocks/mock_clock.dart';
 import 'stalemate_refresher_test.mocks.dart';
 
-@GenerateMocks([StaleMateRefreshConfig, StaleMateLoader])
+@GenerateMocks([StaleMateRefreshConfig, StaleMateLoader, StaleMateHandler])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockStaleMateLoader<bool> mockDataLoader;
+  late MockStaleMateLoader<bool, MockStaleMateHandler<bool>> mockDataLoader;
   late StalePeriodRefreshConfig refreshConfig;
   late MockClock clock;
   final mockRefreshSuccessResult = StaleMateRefreshResult<bool>.success(
@@ -30,7 +30,7 @@ void main() {
   );
 
   setUp(() {
-    mockDataLoader = MockStaleMateLoader<bool>();
+    mockDataLoader = MockStaleMateLoader<bool, MockStaleMateHandler<bool>>();
     clock = MockClock();
     refreshConfig = StalePeriodRefreshConfig(
       stalePeriod: const Duration(minutes: 5),

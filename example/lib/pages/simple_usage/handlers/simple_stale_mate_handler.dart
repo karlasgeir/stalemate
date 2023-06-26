@@ -1,6 +1,6 @@
 import 'package:stalemate/stalemate.dart';
 
-/// This is a simple [StaleMateLoader] that uses a [String] as the data type.
+/// This is a simple [StaleMateHandler] that uses a [String] as the data type.
 ///
 /// It has fake data flow that simulates a local and remote data source.
 /// - The local data is initialized to 'initial local data'.
@@ -8,27 +8,21 @@ import 'package:stalemate/stalemate.dart';
 ///   is incremented.
 /// - If [shouldThrowError] is set to true, [getRemoteData] will throw an error
 ///   to simulate an error when fetching remote data.
-class SimpleStaleMateLoader extends StaleMateLoader<String> {
+class SimpleStaleMateHandler extends StaleMateHandler<String> {
   String _localData = 'initial local data';
   bool shouldThrowError = false;
   int timesUpdatedFromRemote = 0;
 
-  /// Creates a [SimpleStaleMateLoader] with the given parameters.
-  ///
-  /// Arguments:
-  /// - [logLevel] - The [StaleMateLogLevel] to use, defaults to [StaleMateLogLevel.none].
-  /// - [updateOnInit] - Whether to update the data on initialization, defaults to true.
-  /// - [showLocalDataOnError] - Whether to show the local data when an error, defaults to true.
-  SimpleStaleMateLoader({
-    super.logLevel,
-    super.updateOnInit,
-    super.showLocalDataOnError,
-  }) : super(
-          // The empty value is used to determine if the data is empty.
-          // In this case, the empty value is an empty string, but if the type
-          // was a list, it would be an empty list, etc.
-          emptyValue: '',
-        );
+  /// Creates a [SimpleStaleMateHandler] instance.
+  SimpleStaleMateHandler();
+
+  /// This is the method that is called to get the empty value.
+  /// 
+  /// It needs to be overridden to return the empty value.
+  /// 
+  /// In this case, it just returns an empty string.
+  @override
+  String get emptyValue => '';
 
   /// This is the method that is called to get the local data.
   ///

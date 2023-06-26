@@ -1,5 +1,3 @@
-import 'package:collection/collection.dart';
-
 import '../stalemate_refresher/stalemate_refresh_result.dart';
 import '../stalemate_loader/stalemate_loader.dart';
 
@@ -52,8 +50,7 @@ class StaleMateRegistry {
   /// Returns an empty list if no loaders are found.
   ///
   /// If you want to:
-  /// - Get all loaders of a specific type, use [getLoaders].
-  /// - Get the first loader of a specific type, use [getFirstLoader].
+  /// - Get all loaders of a specific type, use [getLoadersWithHandler].
   List<StaleMateLoader> getAllLoaders() {
     return _loaders;
   }
@@ -67,8 +64,7 @@ class StaleMateRegistry {
   /// Results are returned in the order of when the loaders were registered.
   ///
   /// If you want to:
-  /// - Refresh all loaders of a specific type, use [refreshLoaders].
-  /// - Refresh the first loader of a specific type, use [refreshFirstLoader].
+  /// - Refresh all loaders of a specific type, use [refreshLoadersWithHandler].
   /// - Refresh an individual loader, use [StaleMateLoader.refresh].
   ///
   /// See also:
@@ -87,7 +83,7 @@ class StaleMateRegistry {
   /// The loaders will be reset to their empty value.
   ///
   /// If you want to:
-  /// - Reset all loaders of a specific type, use [resetLoaders].
+  /// - Reset all loaders of a specific type, use [resetLoadersWithHandler].
   /// - Reset the first loader of a specific type, use [resetFirstLoader].
   /// - Reset an individual loader, use [StaleMateLoader.reset].
   Future<void> resetAllLoaders() {
@@ -101,18 +97,18 @@ class StaleMateRegistry {
   ///
   /// If you want to:
   /// - Get all loaders, use [getAllLoaders].
-  /// - Get the first loader of a specific type, use [getFirstLoader].
-  List<T> getLoaders<T extends StaleMateLoader>() {
-    return _loaders.whereType<T>().toList();
+  List<StaleMateLoader<T, R>>
+      getLoadersWithHandler<T, R extends StaleMateHandler<T>>() {
+    return _loaders.whereType<StaleMateLoader<T, R>>().toList();
   }
 
   /// Returns the number of registered loaders of the given type.
   ///
   /// If you want to:
   /// - Get the number of all loaders, use [numberOfLoaders].
-  /// - Know if there are any loaders of a specific type, use [hasLoader].
-  int numberOfLoadersOfType<T extends StaleMateLoader>() {
-    return getLoaders<T>().length;
+  /// - Know if there are any loaders of a specific type, use [hasLoaderWithHandler].
+  int numberOfLoadersWithHandler<T, R extends StaleMateHandler<T>>() {
+    return getLoadersWithHandler<T, R>().length;
   }
 
   /// Refreshes all registered loaders of the given type.
@@ -125,100 +121,42 @@ class StaleMateRegistry {
   ///
   /// If you want to:
   /// - Refresh all loaders, use [refreshAllLoaders].
-  /// - Refresh the first loader of a specific type, use [refreshFirstLoader].
   /// - Refresh an individual loader, use [StaleMateLoader.refresh].
   ///
   /// See also:
   /// - [StaleMateRefreshResult] for more information about the result of a refresh
   /// - [StaleMateLoader.refresh] for more information about refreshing a loader
-  Future<List<StaleMateRefreshResult>>
-      refreshLoaders<T extends StaleMateLoader>() async {
-    final loaders = getLoaders<T>();
+  Future<List<StaleMateRefreshResult<T>>>
+      refreshLoadersWithHandler<T, R extends StaleMateHandler<T>>() async {
+    final loaders = getLoadersWithHandler<T, R>();
     final refreshRequests = loaders.map((loader) => loader.refresh()).toList();
     return Future.wait(refreshRequests);
   }
 
-  /// Resets all loaders registered of the given type.
+  /// Resets all registered loaders with a handler of the given type.
   ///
   /// This will clear all data from the loaders
-  /// and call their [StaleMateLoader.removeLocalData] method.
+  /// and call the [StaleMateHandler.removeLocalData] method of the handler.
   ///
   /// The loaders will be reset to their empty value.
   ///
   /// If you want to:
   /// - Reset all loaders, use [resetAllLoaders].
-  /// - Reset the first loader of a specific type, use [resetFirstLoader].
   /// - Reset an individual loader, use [StaleMateLoader.reset].
-  Future<void> resetLoaders<T extends StaleMateLoader>() {
+  Future<void> resetLoadersWithHandler<T, R extends StaleMateHandler<T>>() {
     final resetLoadersRequest =
-        getLoaders<T>().map((loader) => loader.reset()).toList();
+        getLoadersWithHandler<T, R>().map((loader) => loader.reset()).toList();
     return Future.wait(resetLoadersRequest);
   }
 
-  /// Returns the first registered loader of the given type.
-  /// Returns null if no loaders are found.
-  ///
-  /// If you want to:
-  /// - Get all loaders, use [getAllLoaders].
-  /// - Get all loaders of a specific type, use [getLoaders].
-  StaleMateLoader? getFirstLoader<T extends StaleMateLoader>() {
-    return getLoaders<T>().firstOrNull;
-  }
-
-  /// Whether a loader of the given type is registered.
+  /// Whether a loader with a handler of the given type is registered.
   ///
   /// Returns true if one or more loaders are registered.
   /// Returns false if no loaders are registered.
   ///
   /// If multiple loaders are found, true is returned.
-  bool hasLoader<T extends StaleMateLoader>() {
-    return getFirstLoader<T>() != null;
-  }
-
-  /// Refreshes the first registered loader of the given type.
-  ///
-  /// This will call the loader's [StaleMateLoader.refresh] method.
-  ///
-  /// Returns the [StaleMateRefreshResult] for the loader,
-  /// indicating whether the loader was refreshed successfully.
-  /// Will throw an assertion error if no loader is found,
-  /// please use [hasLoader] to check if a loader is registered
-  /// before calling this method.
-  ///
-  /// If you want to:
-  /// - Refresh all loaders, use [refreshAllLoaders].
-  /// - Refresh all loaders of a specific type, use [refreshLoaders].
-  /// - Refresh an individual loader, use [StaleMateLoader.refresh].
-  ///
-  /// See also:
-  /// - [StaleMateRefreshResult] for more information about the result of a refresh
-  /// - [StaleMateLoader.refresh] for more information about refreshing a loader
-  Future<StaleMateRefreshResult>
-      refreshFirstLoader<T extends StaleMateLoader>() async {
-    final loader = getFirstLoader<T>();
-    assert(loader != null, 'No loader of type $T found in registry');
-    return loader!.refresh();
-  }
-
-  /// Resets the first registered loader of the given type.
-  ///
-  /// This will clear all data from the loader
-  /// and call the [StaleMateLoader.removeLocalData] method.
-  ///
-  /// The loader will be reset to its empty value.
-  ///
-  /// Will throw an assertion error if no loader is found,
-  /// please use [hasLoader] to check if a loader is registered
-  ///
-  /// If you want to:
-  /// - Reset all loaders, use [resetAllLoaders].
-  /// - Reset all loaders of a specific type, use [resetLoaders].
-  /// - Reset an individual loader, use [StaleMateLoader.reset].
-  Future<void> resetFirstLoader<T extends StaleMateLoader>() {
-    final loader = getFirstLoader<T>();
-    assert(loader != null, 'No loader of type $T found in registry');
-
-    return loader!.reset();
+  bool hasLoaderWithHandler<T, R extends StaleMateHandler<T>>() {
+    return getLoadersWithHandler<T, R>().isNotEmpty;
   }
 
   /// Sets the global log level for all registered StaleMate loaders.
