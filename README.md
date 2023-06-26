@@ -58,74 +58,110 @@ import 'package:stalemate/stalemate.dart';
 
 # Usage
 
-## Create a loader
+## Create a StaleMateHandler
 
-To create a loader using StaleMate, you need to extend the StaleMateLoader class and implement the getLocalData, getRemoteData, storeLocalData, and removeLocalData methods. However, it's not necessary to implement all these methods. If you only have local data, or if you don't want to store the remote data locally, you can omit the relevant method(s).
+**StaleMateLoaders** utilize **StaleMateHandlers** for storing and retrieving data. To create a handler, extend the **StaleMateHandler** class and implement the **emptyValue** getter, as well as the **getLocalData**, **getRemoteData**, **storeLocalData**, and **removeLocalData** methods.
 
-Here's an example of a simple ToDo loader implementation:
+Here's an example of a simple ToDo handler implementation:
 
 ```dart
-class TodosLoader extends StaleMateLoader<List<ToDo>> {
- // These are the remote and local data sources that will be used
-  // to fetch data from the remote server and store data locally, respectively.
+class TodosHandler extends StaleMateHandler<List<ToDo>> {
   final TodoRemoteDatasource remoteDataSource;
-  // This is the local datasource that will be used to store data locally.
   final TodoLocalDatasource localDataSource;
 
   TodosLoader({
     required this.remoteDataSource,
     required this.localDataSource,
-  }) : super(
-          // You need to provide an empty value for the loader. This value will be
-          // added to the data stream when the loader is reset.
-          emptyValue: [],
-          // Update on init indicates if you want to retrieve data from remote when the loader is initialized.
-          // If there is local data, it will be retrieved as soon as initialize() is called.
-          // updateOnInit: true (default), the loader will subsequently retrive the remote data.
-          // updateOnInit: false
-          //    Have local data: the loader will not retrieve the remote data until refresh is called on the loader
-          //    No local data: the loader will retrieve the remote data when initialized.
-          updateOnInit: true,
-          // Show local data on error indicates if you want to show local data when an error occurs.
-          // showLocalDataOnError: true (default), local data shown on error, if available.
-          // showLocalDataOnError: false, error shown on error, even if local data is available.
-          // If you want to show the user an error on refresh, the refresh call returns a
-          // [StaleMateRefreshResult] object which incidates if the refresh was successful or not.
-          showLocalDataOnError: true,
-          // Set the log level for this specific loader.
-          // The [StaleMateLogLevel.debug] value provides detailed console output,
-          // beneficial for debugging.
-          // The default value is [StaleMateLogLevel.none],
-          // which suppresses all output.
-          logLevel: StaleMateLogLevel.none
-        );
+  });
+
+  /// Override the empty value. This is usually just the empty
+  /// representation of your data type. It is used to indicate
+  /// that the loader is empty and provides a value when the loader is reset.
+  @override
+  List<ToDo> get emptyValue => [];
+
+  /// Retrieve the local data.
+  @override
+  Future<List<ToDo>> getLocalData() async {
+    return localDataSource.getTodos();
+  }
+
+  /// Retrieve the remote data.
+  @override
+  Future<List<ToDo>> getRemoteData() async {
+    return remoteDataSource.getTodos();
+  }
+
+  /// Store the local data.
+  @override
+  Future<void> storeLocalData(List<ToDo> data) async {
+    localDataSource.storeTodos(data);
+  }
+
+  /// Remove the local data.
+  @override
+  Future<void> removeLocalData() async {
+    localDataSource.removeTodos();
+  }
+}
+```
+
+### LocalOnlyStaleMateHandler
+
+For data that is not stored server side, extend the **LocalOnlyStaleMateHandler** instead of the **StaleMateHandler**. The main difference is that you won't override the getRemoteData method.
+
+> You can update the data by calling **addData(updatedTodos)** on the loader, see [Manually refreshing the data](#manually-refreshing-the-data)
+
+Here's an example of a local-only ToDo handler implementation:
+
+```dart
+class TodosLocalOnlyHandler extends LocalOnlyStaleMateHandler<List<ToDo>> {
+  final TodoLocalDatasource localDataSource;
+
+  TodosLocalOnlyHandler({
+    required this.localDataSource,
+  });
+
+  @override
+  List<ToDo> get emptyValue => [];
 
   @override
   Future<List<ToDo>> getLocalData() async {
-    // This is where you should retrieve the local data.
-    // If you don't want to cache data locally, you con't need to override this method.
     return localDataSource.getTodos();
   }
 
   @override
-  Future<List<ToDo>> getRemoteData() async {
-    // This is where you should retrieve the remote data.
-    // If you only have local data and don't want to retrieve remote data, you don't need to override this method.
-    return remoteDataSource.getTodos();
-  }
-
-  @override
   Future<void> storeLocalData(List<ToDo> data) async {
-    // This is where you should store the local data.
-    // If you don't want to cache data locally, you con't need to override this method.
     localDataSource.storeTodos(data);
   }
 
   @override
   Future<void> removeLocalData() async {
-    // This is where you should remove the local data.
-    // If you don't want to cache data locally, you con't need to override this method.
     localDataSource.removeTodos();
+  }
+}
+```
+
+### RemoteOnlyStaleMateHandler
+
+If you prefer not to store data locally but still want to use the loaders, extend the **RemoteOnlyStaleMateHandler** instead of the **StaleMateHandler**. In this case, you only need to override the emptyValue getter and the getRemoteData method.
+
+Here's an example of a remote only ToDo handler implementation:
+
+```dart
+class TodosRemoteOnlyHandler extends RemoteOnlyStaleMateHandler<List<ToDo>> {
+  final TodoRemoteDatasource remoteDataSource;
+
+  TodosRemoteOnlyHandler({
+    required this.remoteDataSource,
+  });
+
+  @override
+  List<ToDo> get emptyValue => [];
+
+  @override
+  Future<List<ToDo>> getRemoteData() async {
+    return remoteDataSource.getTodos();
   }
 }
 ```
@@ -134,52 +170,79 @@ class TodosLoader extends StaleMateLoader<List<ToDo>> {
 
 ### Managing a StaleMateLoader
 
-The _StaleMateLoader_ can be placed wherever it fits best within your application's architecture. It could be used as a singleton, injected via dependency injection, or placed within a repository where it interfaces with both local and remote data sources. This is entirely up to your preference and the specific needs of your application.
+The **StaleMateLoader** can be placed wherever it fits best within your application's architecture. It could be used as a singleton, injected via dependency injection, used within a state management system or placed within a repository where it interfaces with both local and remote data sources. This is entirely up to your preference and the specific needs of your application.
 
-For the purpose of this example, we'll keep things simple by placing the loader directly within a StatefulWidget.
+For the purpose of this example, we'll keep things simple by placing the loader directly within a StatefulWidget. This example makes use of the Todos handler that we created above.
+
+Creating the loader is very simple, in its simplest case, you would only need to provide the StaleMateHandler instance.
 
 ```dart
+// Widget part
+// ...
 class _TodosStatefulState extends State<TodosStateful> {
-    final TodosLoader _todosLoader = TodosLoader(
-        localDataSource: TodoLocalDatasource(),
-        remoteDataSource: TodoRemoteDatasource(),
+    final StaleMateLoader<String, TodosHandler> todosLoader = StaleMateLoader(
+        // The handler is required and dictates where to
+        // store and retrieve data from
+        handler: TodosHandler(
+          localDataSource: TodoLocalDatasource(),
+          remoteDataSource: TodoRemoteDatasource(),
+        ),
+        // `updateOnInit` specifies whether the loader should
+        // fetch data from the remote source at initialization or if
+        // a refresh is needed. Defaults to true.
+        updateOnInit: true,
+        // `showLocalDataOnError` specifies whether the loader
+        // should maintain local data in the data stream if an error
+        // occurs while fetching remote data. Defaults to true.
+        showLocalDataOnError: true,
+       // `refreshConfig` allows the loader to automatically
+        // refresh itself based on the refresh configuration.
+        // If not provided, only manual refresh is supported.
+        // Default is null.
+        refreshConfig: null
+        // `logLevel` configures the log level of individual loaders.
+        // Defaults to StaleMateLogLevel.none.
+        // Change to StaleMateLogLevel.debug to enable all logging.
+        logLevel: StaleMateLogLevel.none,
     );
 }
 ```
 
-Remember to initialize and close the loader in the initState and dispose methods respectively:
+The loader needs to be initialized to start fetching data. It won't start automatically when you create it. This design caters to applications that have dependencies which must be met before data fetching can occur. The loader should also be closed when it's no longer needed, thus freeing up any resources.
+
+In the context of a StatefulWidget, initialization and closure of the loader would occur in the initState and dispose methods respectively.
 
 ```dart
 @override
 void initState() {
     super.initState();
     // Initialize the loader.
-    _todosLoader.initialize();
+    todosLoader.initialize();
 }
 
 @override
 void dispose() {
     // Close the loader.
-    _todosLoader.close();
+    todosLoader.close();
     super.dispose();
   }
 ```
 
 ### Logging
 
-StaleMate loaders offer comprehensive logging, shedding light on their internal operations and aiding in debugging potential issues.
+StaleMate loaders offer detailed logging that provides insight into their internal operations and aids in debugging.
 
-You have several options for configuring logging to suit your needs:
+You can configure logging in the following ways:
 
 - Set the log level for individual loaders during creation.
 - Adjust the log level on a per-loader basis using the setLogLevel method.
 - Modify the default global log level with StaleMate.setLogLevel.
 
-The last option alters the log level for all existing loaders, overriding any previously specified log levels. It also sets a default for any future loaders. However, if a specific log level is provided during the creation of a new loader, this will take precedence over the global default.
+The last option changes the log level for all existing loaders and overrides any log levels set earlier. It also sets a new default for any loaders created in the future. However, if a specific log level is provided while creating a new loader, this will supersede the global default.
 
 ```dart
 // Specify it when creating an instance of the loader
-final loader = ExampleStaleMateLoader(
+final loader = StaleMateLoader(
     //...
     logLevel: StaleMateLogLevel.debug
     //...
@@ -202,10 +265,8 @@ The most straightforward way to display data is to use the **StaleMateBuilder** 
 @override
   Widget build(BuildContext context) {
     return StaleMateBuilder(
-      loader: _todosLoader,
+      loader: todosLoader,
       builder: (context, data) {
-        // when is a utility class that you can use to
-        // render different widgets based on the state of the data
         return data.when(
             // When initialize has not been called
             // or we are waiting for the initial data
@@ -251,7 +312,7 @@ Alternatively, you can achieve the same result by using a **StreamBuilder**:
 @override
   Widget build(BuildContext context) {
     return StreamBuilder(
-      stream: _todosLoader.stream,
+      stream: todosLoader.stream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(
@@ -292,19 +353,17 @@ Alternatively, you can achieve the same result by using a **StreamBuilder**:
 
 ### Manually refreshing the data
 
-You can manually refresh data by calling the refresh method on the loader. The refresh call returns a **StaleMateRefreshResult** object, indicating whether the refresh was successful:
+You can manually refresh data by calling the **refresh** method on the loader. This method returns a **StaleMateRefreshResult** object that indicates the success or failure of the refresh:
 
 ```dart
-final result = await _todosLoader.refresh();
+final result = await todosLoader.refresh();
 if (result.isSuccess) {
-    // Get the updated data if needed
-    // The loader has already been updated with the data
-    // This is just if you want to show something to the user after
-    // refresh
+    // You may want to get the updated data
+    // Although the loader has already been updated with the data,
+    // you can use this if you want to display something to the user after the refresh
     final updatedData = result.requireData;
 } else if (result.isFailure) {
-     // You can use the error here if you need to show different messages
-     // to the user depending on the error
+    // You can use the error here if you need to display different error messages to the user
     final error = result.requireError;
 }
 ```
@@ -324,7 +383,7 @@ The StaleMateRefreshResult object also contains a convenient **on** method:
 
 ### Reset
 
-You can reset the loader to its initial empty state and remove any local data by calling the reset method:
+You can reset the loader to its initial empty state and remove any local data by calling the **reset** method:
 
 ```dart
 _todosLoader.reset();
@@ -332,52 +391,51 @@ _todosLoader.reset();
 
 ### Manually adding data
 
-StaleMate provides the flexibility to manually add data to the loader. This data is subsequently stored locally. This feature proves useful when you've made changes on the server and want to reflect those changes in the loader without executing a full refresh operation.
+StaleMate offers the flexibility to manually add data to the loader. Once added, this data is stored locally (if the Handler stores data locally).
 
-Here's an illustration:
+This feature is particularly beneficial in scenarios where you update or create new server side data, and these changes need to be reflected in the client-side loader without requiring a full refresh operation. Furthermore, it proves helpful to alter the data of local-only loaders.
+
+Here's an example:
 
 ```dart
 addTodo(ToDo todo) {
-    // Update the todos on the server and receive the created todo
+    // Make an API call or a server request to add a 'todo' item
     final addedTodo = await todosRepository.addTodo(todo);
-    // Copy the current todos to ensure immutability
-    final updatedTodos = List<ToDo>.from(_todosLoader.value);
-    // Add the new todo
+    // Make a copy of the current todos to maintain immutability
+    final updatedTodos = List<ToDo>.from(todosLoader.value);
+
+    // Add the newly created 'todo' to the list of existing todos
     updatedTodos.add(addedTodo);
     // Add the todos to the loader
-    // This will also store the new todos locally
-    _todosLoader.addData(updatedTodos);
+    // This will also store the new todos locally if the handler stores data locally
+    todosLoader.addData(updatedTodos);
 }
 ```
 
 ## Automatic Refreshing
 
-StaleMate offers automatic refreshing, which can be enabled by providing refresh config to the loader:
+StaleMate provides a feature for automatic data refreshing, which can be activated by configuring the refresh settings when creating the loader:
 
 ```dart
-TodosLoader({
-    required this.repository,
-  }) : super(
-          emptyValue: [],
-          updateOnInit: true,
-          showLocalDataOnError: true,
-          // The loader will update the data automatically
-          // every hour
-          refreshConfig: StalePeriodRefreshConfig(
-            stalePeriod: const Duration(
-              hours: 1,
-            ),
-          ),
-        );
+StaleMateLoader(
+  // ...
+  // other config
+  // ...
+  refreshConfig: StalePeriodRefreshConfig(
+    stalePeriod: const Duration(
+      hours: 1,
+    ),
+  ),
+);
 ```
 
-> Please note: The loader will not attempt to fetch data while the app is in the background. However, if the data becomes stale while the app is inactive, a new fetch will occur when the app is resumed.
+> Please note: The loader will not initiate a data fetch operation when the app is in the background. However, should the data become stale while the app is inactive, a fetch operation will be triggered upon the app's resumption.
 
-StaleMate offers two built-in refresh strategies: the Stale Period and the Time-of-Day Refresh.
+StaleMate incorporates two built-in refresh strategies: **StalePeriodRefreshConfig** and **TimeOfDayRefreshConfig**.
 
 ### Stale Period
 
-The Stale Period is a predefined duration after which the data in your application is considered "stale" or outdated. When the data becomes stale, StaleMate will automatically refresh it, ensuring it remains up-to-date. You have full control over this duration, allowing you to tailor the refresh rate to the specific needs of your application.
+The 'Stale Period' strategy sets a predefined duration after which the data in your application is marked as "stale" or outdated. Once this period has been reached, StaleMate will automatically refresh the data, ensuring it remains current. This duration is fully customizable, permitting you to adjust the refresh frequency to best suit your application's requirements.
 
 ```dart
 StalePeriodRefreshConfig(
@@ -404,9 +462,9 @@ TimeOfDayRefreshConfig(
 
 ### Advanced usage
 
-Though StaleMate currently provides two automatic refetch strategies, you can create your own custom refresh strategy by extending the StaleMateRefreshConfig class and overriding the getNextRefreshDelay method.
+While StaleMate currently provides two automatic refetch strategies, you also have the freedom to create your own custom refresh strategy. This can be achieved by extending the StaleMateRefreshConfig class and overriding the getNextRefreshDelay method.
 
-Here's an example of how you might implement a custom StalePeriodRefreshConfig:
+Below is an example of a custom StalePeriodRefreshConfig:
 
 ```dart
 class StalePeriodRefreshConfig extends StaleMateRefreshConfig {
@@ -422,72 +480,68 @@ class StalePeriodRefreshConfig extends StaleMateRefreshConfig {
 }
 ```
 
-## StaleMate Paginated Loader
+## Paginating data
 
-StaleMate offers a StaleMatePaginatedLoader which extends the base functionality of StaleMateLoader. It provides the additional benefit of easy data fetching in a paginated manner. The creation of a StaleMatePaginatedLoader is almost identical to creating a StaleMateLoader, except, instead of overwriting the getRemoteData method, StaleMatePaginatedLoader requires you to overwrite the getRemotePaginatedData method instead and provide a pagination config. **Please don't overwrite the getRemoteData method**.
+StaleMate facilitates effortless data pagination through the use of its loaders. This feature is particularly beneficial when dealing with large datasets that can't (or shouldn't) be loaded all at once due to memory and performance considerations.
 
-The StaleMatePaginatedLoader is especially useful in scenarios where your application deals with large datasets that cannot (or should not) be loaded all at once due to memory and performance considerations. Instead of loading the entire data, the StaleMatePaginatedLoader allows for a smooth, seamless experience by loading data in small, manageable chunks (or 'pages').
+For implementing pagination, you need to:
 
-Here's an example of how to implement it:
+- Use the **StaleMatePaginatedHandlerMixin** with your **StaleMateHandler**
+- Use a **StaleMatePaginatedLoader** instead of **StaleMateLoader**
+- Provide **StaleMatePaginationConfig** to the **StaleMatePaginatedLoader**
+
+### Using the StaleMatePaginatedHandlerMixin
+
+The usage of **StaleMatePaginatedHandlerMixin** is similar to regular handlers, the only exception being the need to override **getRemotePaginatedData** instead of **getRemoteData**. This overridden method receives the necessary information to fetch the next page of data.
+
+Here is an example impelementation of paginating ToDos:
 
 ```dart
-/// A loader that handles the pagination logic for you
-class PaginatedTodosLoader extends StaleMatePaginatedLoader<ToDo> {
-  // These are the remote and local data sources that will be used
-  // to fetch data from the remote server and store data locally, respectively.
+class PaginatedTodosHandler extends StaleMateHandler<List<ToDo>> with StaleMatePaginatedHandlerMixin<ToDo> {
   final TodoRemoteDatasource remoteDataSource;
-  // This is the local datasource that will be used to store data locally.
   final TodoLocalDatasource localDataSource;
 
-  PaginatedTodosLoader({
+  TodosLoader({
     required this.remoteDataSource,
     required this.localDataSource,
-  }) : super(
-    // StaleMatePaginatedLoader supports the same properties as the StaleMateLoader
-    // except emptyValue, it is always an empty list since the paginated loader
-    // only supports lists of data.
-    updateOnInit: true,
-    showLocalDataOnError: true,
-    refreshConfig: null,
-    // You'll need to provide a pagination config, which defines how
-    // you are going to paginate the data. StaleMate comes with built-in
-    // configurations for common use cases: StaleMatePagePagination,
-    // StaleMateOffsetLimitPagination, and StaleMateCursorPagination.
-    // For custom configurations, you can overwrite StaleMatePaginationConfig.
-    // This example uses StaleMatePagePagination.
-    paginationConfig: StaleMatePagePagination(
-        pageSize: 10,
-        // Indicates whether pages start counting from zero or one.
-        // false (pages start from 1) by default
-        zeroBasedIndexing: false,
-    )
-  )
+  });
 
+  // ...
+  // Same process for local data
+  // ...
+
+  /// Instead of getRemoteData, you now override getRemotePaginatedData
   @override
-  Future<List<String>> getRemotePaginatedData(
-    Map<String, dynamic> paginationParams,
-  ) async {
+  Future<List<ToDo>> getRemotePaginatedData( Map<String, dynamic> paginationParams) async {
+    // If the pagination config on the loader is StaleMatePagePagination, the
+    // pagination params could be retrieved like this
     final page = paginationParams['page'] as int;
     final pageSize = paginationParams['pageSize'] as int;
-    return _remoteDatasource.getPagePaginatedItems(page, pageSize);
+    return remoteDataSource.getTodos(page: page, pageSize: pageSize);
   }
-
-  // If you want to store the data locally, you can
-  // overwrite the methods for getLocalData, storeLocalData
-  // and removeLocalData just as shown in the StaleMateLoader example
 }
 ```
 
-> Note: For detailed information about the updateOnInit, showLocalDataOnError and refreshConfig, refer to the StaleMateLoader documentation
+### Using the StaleMatePaginatedLoader
+
+The paginated loader can be used in a similar way to the standard **StaleMateLoader**. The key distinction is the capability to call **fetchMore** on the paginated loader, which retrieves the next page of data. When fetchMore is invoked (like when calling refresh), you receive a **StaleMateFetchMoreResult** object. This object indicates the fetch more call's status, any fetched data, any errors (if occurred), and if there's more data to be fetched.
+
 > Note: Calling refresh on a paginated loader resets the pagination and only fetches the first page again.
 
-### Pagination usage
-
-You can use the paginated loader in the same way as the normal **StaleMateLoader**. The key difference is the ability to call **fetchMore** on the paginated loader, which loads the next page of data. When you call **fetchMore**, much like when you call refresh, you'll receive a **StaleMateFetchMoreResult** object. This object indicates the status of the fetch more call, any data retrieved, errors if they occurred, and information about whether there is more data to fetch. Here is an example:
-
 ```dart
+final todosPaginatedLoader = StaleMatePaginatedLoader(
+  handler: PaginatedTodosHandler(
+    remoteDataSource: //...
+    localDataSource: //..
+  ),
+  paginationConfig: StaleMatePagePagination(
+    pageSize: 10,
+    zeroBasedIndexing: false,
+  )
+)
+
 // Call fetch more on the loader to fetch more
-final fetchMoreResult = await _todosLoader.fetchMore();
+final fetchMoreResult = await todosPaginatedLoader.fetchMore();
 
 if (fetchMoreResult.hasData) {
      // The new data that you just fetched from the server
@@ -579,7 +633,11 @@ StaleMateCursorPagination<ToDo>(
 
 ### Advanced pagination
 
-For custom pagination needs, you can extend the **StaleMatePaginationConfig<T>** and implement the **getQueryParams** method. Optionally, you can also override the **onReceivedData** method to create your own data merging function or to define when the loader has finished fetching data. If you don't override **onReceivedData** and set the **canFetchMore** parameter to false when it's appropriate, the **isDone** functionality of the **StaleMateFetchMoreResult** won't work. Here's an example of how **StaleMateCursorPagination** is implemented:
+For custom pagination needs, the **StaleMatePaginationConfig** can be extended. The **getQueryParams** method needs to be implemented and optionally, you can also override the **onReceivedData** method to create your own data merging function or to define when the loader has finished fetching data.
+
+> If the **onReceivedData** is not overridden and the **canFetchMore** parameter set to false when it's appropriate, the **isDone** functionality of the **StaleMateFetchMoreResult** will not work.
+
+Here's an example of how **StaleMateCursorPagination** is implemented:
 
 ```dart
 class StaleMateCursorPagination<T> extends StaleMatePaginationConfig<T> {
@@ -625,35 +683,30 @@ class StaleMateCursorPagination<T> extends StaleMatePaginationConfig<T> {
 
 ## StaleMate registry
 
-The StaleMate library provides a registry to manage all loader instances. It gives you access to global bulk operations and the ability to retrieve loader instances from anywhere in your application.
+The StaleMate library includes a registry for managing all loader instances. This registry offers global bulk operations and enables you to retrieve loader instances from anywhere within your application.
 
 ### How does it work?
 
-Loaders automatically register and deregister themselves with the registry when they are created and disposed. This means you do not need to worry about manual management
+Loaders automatically register and deregister themselves with the registry upon creation and disposal. This means there's no need for manual management.
 
 ### What can you do with it?
 
-With the StaleMate registry, you can perform the following operations:
+With the StaleMate registry, you can:
 
 - Access the count of registered loaders.
 - Retrieve all registered loaders.
 - Refresh all loaders.
 - Reset all loaders.
-- Retrieve loaders of a specific type.
-- Refresh all loaders of a specific type.
-- Reset all loaders of a specific type.
-- Check if a loader of a specific type exists.
-- Retrieve the first loader of a specific type.
-- Refresh the first loader of a specific type.
-- Reset the first loader of a specific type.
+- Retrieve, refresh, and reset loaders with a specific **StaleMateHandler** type.
+- Check if a loader with a **StaleMateHandler** of a specific type exists
 
 ### When to use the StaleMate Registry?
 
-While you don't need to use the registry directly in many cases, it can be extremely useful depending on the structure of your application. If you want to reset all loaders when a user logs out of the application, refresh all loaders at once, or retrieve a loader of a specific type from a different part of your application, the StaleMate registry provides you with these capabilities.
+While direct use of the registry isn't always necessary, it can be quite useful depending on your application's structure. For instance, if you need to reset all loaders when a user logs out, refresh all loaders simultaneously, or fetch a loader of a certain type from a different part of your application.
 
-> Keep in mind that in many cases you maintain control of your loader instances and perform operations on their instances directly, you might not need to use the registry.
+> Note: If you maintain direct control of your loader instances and perform operations on them directly, you may not need to use the registry.
 
-Here's an example of how you can interact with the StaleMate registry:
+Here's an example demonstrating interactions with the StaleMate registry:
 
 ```dart
 logoutUser() async {
@@ -664,20 +717,14 @@ logoutUser() async {
 }
 
 refreshAllTodoLoaders() async {
-    final List<StaleMateRefreshResult> refreshResults = await StaleMate.refreshLoaders<TodosLoader>();
-}
-
-List<ToDo> getTodosFromFirstTodoLoader() {
-    return StaleMate.getFirstLoader<TodosLoader>?.value ?? [];
+    final List<StaleMateRefreshResult> refreshResults = await StaleMate.refreshLoaders<List<ToDo>, TodosHandler>();
 }
 ```
 
-**Please remember to handle potential null values and exceptions when using the registry.**
-
 # Final thoughts
 
-We hope that this documentation helps you understand how to effectively use the StaleMate library in your Flutter applications. The aim of this library is to simplify and optimize your data management and refresh strategies.
+We hope that this documentation helps you understand how to use the StaleMate library in your Flutter applications. The aim of this library is to simplify and optimize your data management and refresh strategies.
 
 If you encounter any problems or have suggestions for future features, please [create an issue](https://github.com/karlasgeir/stalemate/issues) in our GitHub repository. We appreciate your feedback and will do our best to improve StaleMate based on your needs and experiences.
 
-Remember, StaleMate is designed to be flexible and adaptable to your needs, so we encourage you to experiment and find the configurations and strategies that work best for your the unique context of your application.
+Remember, StaleMate is designed to be flexible and adaptable to your needs, so we encourage you to experiment and find the configurations and strategies that work best in your application's unique context.
