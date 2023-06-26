@@ -3,14 +3,15 @@ import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:stalemate/stalemate.dart';
 
-class MockStaleMatePaginatedLoader extends StaleMatePaginatedLoader<String> {
-  bool shouldThrowError = false;
-  static final List<String> remoteItems =
-      List.generate(25, (index) => 'item ${index + 1}');
+final List<String> remoteItems =
+    List.generate(25, (index) => 'item ${index + 1}');
 
-  MockStaleMatePaginatedLoader({
-    required super.paginationConfig,
-  });
+class MockStaleMateHandler extends RemoteOnlyStaleMateHandler<List<String>>
+    with PaginatedHandlerMixin<String> {
+  bool shouldThrowError = false;
+
+  @override
+  List<String> get emptyValue => <String>[];
 
   @override
   Future<List<String>> getRemotePaginatedData(
@@ -48,6 +49,22 @@ class MockStaleMatePaginatedLoader extends StaleMatePaginatedLoader<String> {
   }
 }
 
+class MockStaleMatePaginatedLoader
+    extends StaleMatePaginatedLoader<String, MockStaleMateHandler> {
+  final MockStaleMateHandler handler;
+
+  setShouldThrowError(bool shouldTrowError) {
+    handler.shouldThrowError = shouldTrowError;
+  }
+
+  MockStaleMatePaginatedLoader({
+    required super.paginationConfig,
+    required this.handler,
+  }) : super(
+          handler: handler,
+        );
+}
+
 void main() {
   group('Paginated Loader basics', () {
     late MockStaleMatePaginatedLoader paginatedLoader;
@@ -55,6 +72,7 @@ void main() {
       // We use the pagination config for this tests
       // other pagination config will be tested in their own test tests
       paginatedLoader = MockStaleMatePaginatedLoader(
+        handler: MockStaleMateHandler(),
         paginationConfig: StaleMatePagePagination(
           pageSize: 10,
         ),
@@ -63,8 +81,7 @@ void main() {
 
     test('should initialize with first page of data', () async {
       await paginatedLoader.initialize();
-      expect(paginatedLoader.value,
-          equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)));
+      expect(paginatedLoader.value, equals(remoteItems.sublist(0, 10)));
     });
 
     test('successful fetch more with more data to come', () async {
@@ -72,7 +89,7 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
 
       final fetchMoreResults = await paginatedLoader.fetchMore();
@@ -88,17 +105,15 @@ void main() {
       expect(fetchMoreResults.requireFetchMoreFinishedAt, isNotNull);
       expect(fetchMoreResults.fetchMoreDuration, isNotNull);
       expect(fetchMoreResults.requireFetchMoreDuration, isNotNull);
-      expect(fetchMoreResults.newData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(10, 20));
-      expect(fetchMoreResults.mergedData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20));
+      expect(fetchMoreResults.newData, remoteItems.sublist(10, 20));
+      expect(fetchMoreResults.mergedData, remoteItems.sublist(0, 20));
       expect(
         fetchMoreResults.requireNewData,
-        MockStaleMatePaginatedLoader.remoteItems.sublist(10, 20),
+        remoteItems.sublist(10, 20),
       );
       expect(
         fetchMoreResults.requireMergedData,
-        MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20),
+        remoteItems.sublist(0, 20),
       );
       expect(fetchMoreResults.fetchMoreParameters, {'page': 2, 'pageSize': 10});
 
@@ -113,7 +128,7 @@ void main() {
       // The loader should have the new data
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20)),
+        equals(remoteItems.sublist(0, 20)),
       );
     });
 
@@ -160,13 +175,13 @@ void main() {
       // The loader should only have the data fromt he initialization
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
 
       // next paginated query params should be the second page, since the first call
       // to fetch more was ignored
       expect(
-        paginatedLoader.paginationConfig.getQueryParams(
+        paginatedLoader.handler.paginationConfig.getQueryParams(
           paginatedLoader.value.length,
           paginatedLoader.value.last,
         ),
@@ -218,13 +233,13 @@ void main() {
       // The loader should have the new data from the first fetch more and not the second
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20)),
+        equals(remoteItems.sublist(0, 20)),
       );
 
       // next paginated query params should be the third page, since the second call
       // to fetch more was ignored
       expect(
-        paginatedLoader.paginationConfig.getQueryParams(
+        paginatedLoader.handler.paginationConfig.getQueryParams(
           paginatedLoader.value.length,
           paginatedLoader.value.last,
         ),
@@ -248,7 +263,7 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
     });
 
@@ -275,7 +290,7 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
     });
 
@@ -284,7 +299,7 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
 
       final fetchMoreResults = await paginatedLoader.fetchMore();
@@ -292,7 +307,7 @@ void main() {
       expect(fetchMoreResults.moreDataAvailable, true);
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20)),
+        equals(remoteItems.sublist(0, 20)),
       );
 
       final fetchMoreResults2 = await paginatedLoader.fetchMore();
@@ -308,10 +323,8 @@ void main() {
       expect(fetchMoreResults2.requireFetchMoreFinishedAt, isNotNull);
       expect(fetchMoreResults2.fetchMoreDuration, isNotNull);
       expect(fetchMoreResults2.requireFetchMoreDuration, isNotNull);
-      expect(fetchMoreResults2.newData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(20, 25));
-      expect(fetchMoreResults2.mergedData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(0, 25));
+      expect(fetchMoreResults2.newData, remoteItems.sublist(20, 25));
+      expect(fetchMoreResults2.mergedData, remoteItems.sublist(0, 25));
       expect(
           fetchMoreResults2.fetchMoreParameters, {'page': 3, 'pageSize': 10});
 
@@ -324,7 +337,7 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 25)),
+        equals(remoteItems.sublist(0, 25)),
       );
 
       // If we try to fetch more, we should return done immediately
@@ -342,8 +355,7 @@ void main() {
       expect(fetchMoreResults3.fetchMoreDuration, isNotNull);
       expect(fetchMoreResults3.requireFetchMoreDuration, isNotNull);
       expect(fetchMoreResults3.newData, []);
-      expect(fetchMoreResults3.mergedData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(0, 25));
+      expect(fetchMoreResults3.mergedData, remoteItems.sublist(0, 25));
       expect(
           fetchMoreResults3.fetchMoreParameters, {'page': 4, 'pageSize': 10});
 
@@ -356,7 +368,7 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 25)),
+        equals(remoteItems.sublist(0, 25)),
       );
     });
 
@@ -365,14 +377,14 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
 
-      paginatedLoader.shouldThrowError = true;
+      paginatedLoader.setShouldThrowError(true);
 
       final fetchMoreResult = await paginatedLoader.fetchMore();
 
-      paginatedLoader.shouldThrowError = false;
+      paginatedLoader.setShouldThrowError(false);
 
       // Should be set
       expect(fetchMoreResult.status, StaleMateFetchMoreStatus.failure);
@@ -400,8 +412,7 @@ void main() {
           throwsA(isA<AssertionError>()));
 
       // Check that data is still in the loader
-      expect(paginatedLoader.value,
-          equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)));
+      expect(paginatedLoader.value, equals(remoteItems.sublist(0, 10)));
 
       // Verify that another successful fetch more works as expected
       final fetchMoreSubsequentSuccess = await paginatedLoader.fetchMore();
@@ -409,12 +420,10 @@ void main() {
       expect(fetchMoreSubsequentSuccess.moreDataAvailable, true);
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20)),
+        equals(remoteItems.sublist(0, 20)),
       );
-      expect(fetchMoreSubsequentSuccess.newData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(10, 20));
-      expect(fetchMoreSubsequentSuccess.mergedData,
-          MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20));
+      expect(fetchMoreSubsequentSuccess.newData, remoteItems.sublist(10, 20));
+      expect(fetchMoreSubsequentSuccess.mergedData, remoteItems.sublist(0, 20));
     });
 
     test('Loader starts from scratch when refreshed', () async {
@@ -423,14 +432,14 @@ void main() {
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20)),
+        equals(remoteItems.sublist(0, 20)),
       );
 
       await paginatedLoader.refresh();
 
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
     });
   });
@@ -442,14 +451,14 @@ void main() {
       await paginatedLoader.initialize();
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 10)),
+        equals(remoteItems.sublist(0, 10)),
       );
 
       // Verify that the correct page size is loaded when fetching more
       final fetchMorefirstResult = await paginatedLoader.fetchMore();
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 20)),
+        equals(remoteItems.sublist(0, 20)),
       );
 
       // Verify that we can still fetch more
@@ -458,7 +467,7 @@ void main() {
       final fetchMoreResult2 = await paginatedLoader.fetchMore();
       expect(
         paginatedLoader.value,
-        equals(MockStaleMatePaginatedLoader.remoteItems.sublist(0, 25)),
+        equals(remoteItems.sublist(0, 25)),
       );
 
       // Verify that we can't fetch more
@@ -467,6 +476,7 @@ void main() {
 
     test('Page Pagination config', () async {
       final paginatedLoader = MockStaleMatePaginatedLoader(
+        handler: MockStaleMateHandler(),
         paginationConfig: StaleMatePagePagination(
           pageSize: 10,
         ),
@@ -477,6 +487,7 @@ void main() {
 
     test('Page Pagination config zero indexed', () async {
       final paginatedLoader = MockStaleMatePaginatedLoader(
+        handler: MockStaleMateHandler(),
         paginationConfig: StaleMatePagePagination(
           pageSize: 10,
           zeroBasedIndexing: true,
@@ -488,6 +499,7 @@ void main() {
 
     test('Offset Pagination config', () async {
       final paginatedLoader = MockStaleMatePaginatedLoader(
+        handler: MockStaleMateHandler(),
         paginationConfig: StaleMateOffsetLimitPagination(
           limit: 10,
         ),
@@ -498,6 +510,7 @@ void main() {
 
     test('Cursor pagination config', () async {
       final paginatedLoader = MockStaleMatePaginatedLoader(
+        handler: MockStaleMateHandler(),
         paginationConfig: StaleMateCursorPagination(
           limit: 10,
           // In this case the cursor is the item itself since it is a string
@@ -512,6 +525,7 @@ void main() {
   group('test state of loader', () {
     test('state progression while fetching more', () async {
       final paginatedLoader = MockStaleMatePaginatedLoader(
+        handler: MockStaleMateHandler(),
         paginationConfig: StaleMatePagePagination(
           pageSize: 10,
         ),
@@ -522,7 +536,7 @@ void main() {
 
       await paginatedLoader.initialize();
 
-      expect(paginatedLoader.state.localStatus, StaleMateStatus.error);
+      expect(paginatedLoader.state.localStatus, StaleMateStatus.idle);
       expect(paginatedLoader.state.remoteStatus, StaleMateStatus.loaded);
 
       final fetchMoreFuture = paginatedLoader.fetchMore();

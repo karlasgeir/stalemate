@@ -5,13 +5,16 @@
 // @dart=2.19
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i4;
+import 'dart:async' as _i5;
 
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:stalemate/src/stalemate_loader/stalemate_loader.dart' as _i2;
+import 'package:stalemate/src/stalemate_loader/stalemate_state_manager.dart'
+    as _i6;
 import 'package:stalemate/src/stalemate_refresher/stalemate_refresh_result.dart'
-    as _i2;
+    as _i3;
 
-import 'stalemate_registry_test.dart' as _i3;
+import 'stalemate_registry_test.dart' as _i4;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -24,9 +27,9 @@ import 'stalemate_registry_test.dart' as _i3;
 // ignore_for_file: camel_case_types
 // ignore_for_file: subtype_of_sealed_class
 
-class _FakeStaleMateRefreshResult_0<T> extends _i1.SmartFake
-    implements _i2.StaleMateRefreshResult<T> {
-  _FakeStaleMateRefreshResult_0(
+class _FakeStaleMateLoaderState_0 extends _i1.SmartFake
+    implements _i2.StaleMateLoaderState {
+  _FakeStaleMateLoaderState_0(
     Object parent,
     Invocation parentInvocation,
   ) : super(
@@ -35,12 +38,242 @@ class _FakeStaleMateRefreshResult_0<T> extends _i1.SmartFake
         );
 }
 
-/// A class which mocks [StaleMateLoaderImpl1].
+class _FakeStaleMateRefreshResult_1<T> extends _i1.SmartFake
+    implements _i3.StaleMateRefreshResult<T> {
+  _FakeStaleMateRefreshResult_1(
+    Object parent,
+    Invocation parentInvocation,
+  ) : super(
+          parent,
+          parentInvocation,
+        );
+}
+
+/// A class which mocks [StaleMateLoader1].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStaleMateLoaderImpl1 extends _i1.Mock
-    implements _i3.StaleMateLoaderImpl1 {
-  MockStaleMateLoaderImpl1() {
+class MockStaleMateLoader1 extends _i1.Mock implements _i4.StaleMateLoader1 {
+  MockStaleMateLoader1() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  bool get updateOnInit => (super.noSuchMethod(
+        Invocation.getter(#updateOnInit),
+        returnValue: false,
+      ) as bool);
+  @override
+  bool get showLocalDataOnError => (super.noSuchMethod(
+        Invocation.getter(#showLocalDataOnError),
+        returnValue: false,
+      ) as bool);
+  @override
+  _i5.Stream<String> get stream => (super.noSuchMethod(
+        Invocation.getter(#stream),
+        returnValue: _i5.Stream<String>.empty(),
+      ) as _i5.Stream<String>);
+  @override
+  String get value => (super.noSuchMethod(
+        Invocation.getter(#value),
+        returnValue: '',
+      ) as String);
+  @override
+  bool get isEmpty => (super.noSuchMethod(
+        Invocation.getter(#isEmpty),
+        returnValue: false,
+      ) as bool);
+  @override
+  _i2.StaleMateLoaderState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _FakeStaleMateLoaderState_0(
+          this,
+          Invocation.getter(#state),
+        ),
+      ) as _i2.StaleMateLoaderState);
+  @override
+  void addStateListener(_i6.StateListener? listener) => super.noSuchMethod(
+        Invocation.method(
+          #addStateListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  void removeStateListener(_i6.StateListener? listener) => super.noSuchMethod(
+        Invocation.method(
+          #removeStateListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  _i5.Future<void> addData(String? data) => (super.noSuchMethod(
+        Invocation.method(
+          #addData,
+          [data],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+  @override
+  _i5.Future<void> initialize() => (super.noSuchMethod(
+        Invocation.method(
+          #initialize,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+  @override
+  _i5.Future<_i3.StaleMateRefreshResult<String>> refresh() =>
+      (super.noSuchMethod(
+        Invocation.method(
+          #refresh,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.StaleMateRefreshResult<String>>.value(
+            _FakeStaleMateRefreshResult_1<String>(
+          this,
+          Invocation.method(
+            #refresh,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.StaleMateRefreshResult<String>>);
+  @override
+  _i5.Future<void> reset() => (super.noSuchMethod(
+        Invocation.method(
+          #reset,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+  @override
+  void setLogLevel(_i2.StaleMateLogLevel? logLevel) => super.noSuchMethod(
+        Invocation.method(
+          #setLogLevel,
+          [logLevel],
+        ),
+        returnValueForMissingStub: null,
+      );
+}
+
+/// A class which mocks [StaleMateLoader2].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockStaleMateLoader2 extends _i1.Mock implements _i4.StaleMateLoader2 {
+  MockStaleMateLoader2() {
+    _i1.throwOnMissingStub(this);
+  }
+
+  @override
+  bool get updateOnInit => (super.noSuchMethod(
+        Invocation.getter(#updateOnInit),
+        returnValue: false,
+      ) as bool);
+  @override
+  bool get showLocalDataOnError => (super.noSuchMethod(
+        Invocation.getter(#showLocalDataOnError),
+        returnValue: false,
+      ) as bool);
+  @override
+  _i5.Stream<int> get stream => (super.noSuchMethod(
+        Invocation.getter(#stream),
+        returnValue: _i5.Stream<int>.empty(),
+      ) as _i5.Stream<int>);
+  @override
+  int get value => (super.noSuchMethod(
+        Invocation.getter(#value),
+        returnValue: 0,
+      ) as int);
+  @override
+  bool get isEmpty => (super.noSuchMethod(
+        Invocation.getter(#isEmpty),
+        returnValue: false,
+      ) as bool);
+  @override
+  _i2.StaleMateLoaderState get state => (super.noSuchMethod(
+        Invocation.getter(#state),
+        returnValue: _FakeStaleMateLoaderState_0(
+          this,
+          Invocation.getter(#state),
+        ),
+      ) as _i2.StaleMateLoaderState);
+  @override
+  void addStateListener(_i6.StateListener? listener) => super.noSuchMethod(
+        Invocation.method(
+          #addStateListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  void removeStateListener(_i6.StateListener? listener) => super.noSuchMethod(
+        Invocation.method(
+          #removeStateListener,
+          [listener],
+        ),
+        returnValueForMissingStub: null,
+      );
+  @override
+  _i5.Future<void> addData(int? data) => (super.noSuchMethod(
+        Invocation.method(
+          #addData,
+          [data],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+  @override
+  _i5.Future<void> initialize() => (super.noSuchMethod(
+        Invocation.method(
+          #initialize,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+  @override
+  _i5.Future<_i3.StaleMateRefreshResult<int>> refresh() => (super.noSuchMethod(
+        Invocation.method(
+          #refresh,
+          [],
+        ),
+        returnValue: _i5.Future<_i3.StaleMateRefreshResult<int>>.value(
+            _FakeStaleMateRefreshResult_1<int>(
+          this,
+          Invocation.method(
+            #refresh,
+            [],
+          ),
+        )),
+      ) as _i5.Future<_i3.StaleMateRefreshResult<int>>);
+  @override
+  _i5.Future<void> reset() => (super.noSuchMethod(
+        Invocation.method(
+          #reset,
+          [],
+        ),
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
+  @override
+  void setLogLevel(_i2.StaleMateLogLevel? logLevel) => super.noSuchMethod(
+        Invocation.method(
+          #setLogLevel,
+          [logLevel],
+        ),
+        returnValueForMissingStub: null,
+      );
+}
+
+/// A class which mocks [StaleMateHandlerImpl1].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockStaleMateHandlerImpl1 extends _i1.Mock
+    implements _i4.StaleMateHandlerImpl1 {
+  MockStaleMateHandlerImpl1() {
     _i1.throwOnMissingStub(this);
   }
 
@@ -50,110 +283,47 @@ class MockStaleMateLoaderImpl1 extends _i1.Mock
         returnValue: '',
       ) as String);
   @override
-  bool get updateOnInit => (super.noSuchMethod(
-        Invocation.getter(#updateOnInit),
-        returnValue: false,
-      ) as bool);
-  @override
-  bool get showLocalDataOnError => (super.noSuchMethod(
-        Invocation.getter(#showLocalDataOnError),
-        returnValue: false,
-      ) as bool);
-  @override
-  _i4.Stream<String> get stream => (super.noSuchMethod(
-        Invocation.getter(#stream),
-        returnValue: _i4.Stream<String>.empty(),
-      ) as _i4.Stream<String>);
-  @override
-  String get value => (super.noSuchMethod(
-        Invocation.getter(#value),
-        returnValue: '',
-      ) as String);
-  @override
-  _i4.Future<String> getLocalData() => (super.noSuchMethod(
+  _i5.Future<String> getLocalData() => (super.noSuchMethod(
         Invocation.method(
           #getLocalData,
           [],
         ),
-        returnValue: _i4.Future<String>.value(''),
-      ) as _i4.Future<String>);
+        returnValue: _i5.Future<String>.value(''),
+      ) as _i5.Future<String>);
   @override
-  _i4.Future<String> getRemoteData() => (super.noSuchMethod(
+  _i5.Future<String> getRemoteData() => (super.noSuchMethod(
         Invocation.method(
           #getRemoteData,
           [],
         ),
-        returnValue: _i4.Future<String>.value(''),
-      ) as _i4.Future<String>);
+        returnValue: _i5.Future<String>.value(''),
+      ) as _i5.Future<String>);
   @override
-  _i4.Future<void> storeLocalData(String? data) => (super.noSuchMethod(
+  _i5.Future<void> storeLocalData(String? data) => (super.noSuchMethod(
         Invocation.method(
           #storeLocalData,
           [data],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
   @override
-  _i4.Future<void> removeLocalData() => (super.noSuchMethod(
+  _i5.Future<void> removeLocalData() => (super.noSuchMethod(
         Invocation.method(
           #removeLocalData,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-  @override
-  _i4.Future<void> addData(String? data) => (super.noSuchMethod(
-        Invocation.method(
-          #addData,
-          [data],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-  @override
-  _i4.Future<void> initialize() => (super.noSuchMethod(
-        Invocation.method(
-          #initialize,
-          [],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-  @override
-  _i4.Future<_i2.StaleMateRefreshResult<String>> refresh() =>
-      (super.noSuchMethod(
-        Invocation.method(
-          #refresh,
-          [],
-        ),
-        returnValue: _i4.Future<_i2.StaleMateRefreshResult<String>>.value(
-            _FakeStaleMateRefreshResult_0<String>(
-          this,
-          Invocation.method(
-            #refresh,
-            [],
-          ),
-        )),
-      ) as _i4.Future<_i2.StaleMateRefreshResult<String>>);
-  @override
-  _i4.Future<void> reset() => (super.noSuchMethod(
-        Invocation.method(
-          #reset,
-          [],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }
 
-/// A class which mocks [StaleMateLoaderImpl2].
+/// A class which mocks [StaleMateHandlerImpl2].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockStaleMateLoaderImpl2 extends _i1.Mock
-    implements _i3.StaleMateLoaderImpl2 {
-  MockStaleMateLoaderImpl2() {
+class MockStaleMateHandlerImpl2 extends _i1.Mock
+    implements _i4.StaleMateHandlerImpl2 {
+  MockStaleMateHandlerImpl2() {
     _i1.throwOnMissingStub(this);
   }
 
@@ -163,99 +333,37 @@ class MockStaleMateLoaderImpl2 extends _i1.Mock
         returnValue: 0,
       ) as int);
   @override
-  bool get updateOnInit => (super.noSuchMethod(
-        Invocation.getter(#updateOnInit),
-        returnValue: false,
-      ) as bool);
-  @override
-  bool get showLocalDataOnError => (super.noSuchMethod(
-        Invocation.getter(#showLocalDataOnError),
-        returnValue: false,
-      ) as bool);
-  @override
-  _i4.Stream<int> get stream => (super.noSuchMethod(
-        Invocation.getter(#stream),
-        returnValue: _i4.Stream<int>.empty(),
-      ) as _i4.Stream<int>);
-  @override
-  int get value => (super.noSuchMethod(
-        Invocation.getter(#value),
-        returnValue: 0,
-      ) as int);
-  @override
-  _i4.Future<int> getLocalData() => (super.noSuchMethod(
+  _i5.Future<int> getLocalData() => (super.noSuchMethod(
         Invocation.method(
           #getLocalData,
           [],
         ),
-        returnValue: _i4.Future<int>.value(0),
-      ) as _i4.Future<int>);
+        returnValue: _i5.Future<int>.value(0),
+      ) as _i5.Future<int>);
   @override
-  _i4.Future<int> getRemoteData() => (super.noSuchMethod(
+  _i5.Future<int> getRemoteData() => (super.noSuchMethod(
         Invocation.method(
           #getRemoteData,
           [],
         ),
-        returnValue: _i4.Future<int>.value(0),
-      ) as _i4.Future<int>);
+        returnValue: _i5.Future<int>.value(0),
+      ) as _i5.Future<int>);
   @override
-  _i4.Future<void> storeLocalData(int? data) => (super.noSuchMethod(
+  _i5.Future<void> storeLocalData(int? data) => (super.noSuchMethod(
         Invocation.method(
           #storeLocalData,
           [data],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
   @override
-  _i4.Future<void> removeLocalData() => (super.noSuchMethod(
+  _i5.Future<void> removeLocalData() => (super.noSuchMethod(
         Invocation.method(
           #removeLocalData,
           [],
         ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-  @override
-  _i4.Future<void> addData(int? data) => (super.noSuchMethod(
-        Invocation.method(
-          #addData,
-          [data],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-  @override
-  _i4.Future<void> initialize() => (super.noSuchMethod(
-        Invocation.method(
-          #initialize,
-          [],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
-  @override
-  _i4.Future<_i2.StaleMateRefreshResult<int>> refresh() => (super.noSuchMethod(
-        Invocation.method(
-          #refresh,
-          [],
-        ),
-        returnValue: _i4.Future<_i2.StaleMateRefreshResult<int>>.value(
-            _FakeStaleMateRefreshResult_0<int>(
-          this,
-          Invocation.method(
-            #refresh,
-            [],
-          ),
-        )),
-      ) as _i4.Future<_i2.StaleMateRefreshResult<int>>);
-  @override
-  _i4.Future<void> reset() => (super.noSuchMethod(
-        Invocation.method(
-          #reset,
-          [],
-        ),
-        returnValue: _i4.Future<void>.value(),
-        returnValueForMissingStub: _i4.Future<void>.value(),
-      ) as _i4.Future<void>);
+        returnValue: _i5.Future<void>.value(),
+        returnValueForMissingStub: _i5.Future<void>.value(),
+      ) as _i5.Future<void>);
 }
