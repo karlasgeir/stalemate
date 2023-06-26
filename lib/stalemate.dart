@@ -49,8 +49,7 @@ class StaleMate {
   /// Returns an empty list if no loaders are found.
   ///
   /// If you want to:
-  /// - Get all loaders of a specific type, use [getLoaders].
-  /// - Get the first loader of a specific type, use [getFirstLoader].
+  /// - Get all loaders for a specific handler [getLoadersWithHandler].
   static List<StaleMateLoader> getAllLoaders() =>
       StaleMateRegistry.instance.getAllLoaders();
 
@@ -63,8 +62,7 @@ class StaleMate {
   /// Results are returned in the order of when the loaders were registered.
   ///
   /// If you want to:
-  /// - Refresh all loaders of a specific type, use [refreshLoaders].
-  /// - Refresh the first loader of a specific type, use [refreshFirstLoader].
+  /// - Refresh all loaders for a specific handler, use [refreshLoadersWithHandler].
   /// - Refresh an individual loader, use [StaleMateLoader.refresh].
   ///
   /// See also:
@@ -76,13 +74,12 @@ class StaleMate {
   /// Resets all loaders registered with StaleMate.
   ///
   /// This will clear all data from the loaders
-  /// and call their [StaleMateLoader.removeLocalData] method.
+  /// and call the [StaleMateHandler.removeLocalData] on their handler
   ///
   /// The loaders will be reset to their empty value.
   ///
   /// If you want to:
-  /// - Reset all loaders of a specific type, use [resetLoaders].
-  /// - Reset the first loader of a specific type, use [resetFirstLoader].
+  /// - Resetall loaders for a specific handler, use [resetLoadersWithHandler].
   /// - Reset an individual loader, use [StaleMateLoader.reset].
   static Future<void> resetAllLoaders() =>
       StaleMateRegistry.instance.resetAllLoaders();
@@ -107,7 +104,6 @@ class StaleMate {
   ///
   /// If you want to:
   /// - Refresh all loaders, use [refreshAllLoaders].
-  /// - Refresh the first loader of a specific type, use [refreshFirstLoader].
   /// - Refresh an individual loader, use [StaleMateLoader.refresh].
   ///
   /// See also:
@@ -120,13 +116,12 @@ class StaleMate {
   /// Resets all loaders registered of the given type.
   ///
   /// This will clear all data from the loaders
-  /// and call their [StaleMateLoader.removeLocalData] method.
+  /// and call the [StaleMateHandler.removeLocalData] method on their handler.
   ///
   /// The loaders will be reset to their empty value.
   ///
   /// If you want to:
   /// - Reset all loaders, use [resetAllLoaders].
-  /// - Reset the first loader of a specific type, use [resetFirstLoader].
   /// - Reset an individual loader, use [StaleMateLoader.reset].
   static Future<void>
       resetLoadersWithHandler<T, R extends StaleMateHandler<T>>() =>

@@ -5,7 +5,10 @@ part of '../stalemate_loader/stalemate_loader.dart';
 /// This loader is useful when you have data that needs to be loaded in pages.
 ///
 /// The [StaleMatePaginatedLoader] supports everything that the [StaleMateLoader] supports,
-/// and adds the ability to load paginated data
+/// and adds the ability to load paginated data.
+///
+/// - In contrast to the base [StaleMateLoader], the [StaleMatePaginatedLoader] only supports lists,
+///  and takes in T as a data type, where T is the type of the list items.
 ///
 /// Additions to base [StaleMateLoader]:
 /// - **handler** must use [PaginatedHandlerMixin]
@@ -44,8 +47,9 @@ part of '../stalemate_loader/stalemate_loader.dart';
 ///   },
 ///);
 ///```
-class StaleMatePaginatedLoader<T, HandlerType extends PaginatedHandlerMixin<T>>
-    extends StaleMateLoader<List<T>, HandlerType> {
+class StaleMatePaginatedLoader<ListItemType,
+        HandlerType extends PaginatedHandlerMixin<ListItemType>>
+    extends StaleMateLoader<List<ListItemType>, HandlerType> {
   /// Create a new [StaleMatePaginatedLoader] instance
   ///
   /// Used to load data in pages.
@@ -58,7 +62,7 @@ class StaleMatePaginatedLoader<T, HandlerType extends PaginatedHandlerMixin<T>>
   /// - [refreshConfig] : Refresh config used to refresh the data
   /// - [logLevel] : Log level used to log the loader events
   StaleMatePaginatedLoader({
-    required StaleMatePaginationConfig<T> paginationConfig,
+    required StaleMatePaginationConfig<ListItemType> paginationConfig,
     required HandlerType handler,
     super.updateOnInit,
     super.showLocalDataOnError,
@@ -125,11 +129,11 @@ class StaleMatePaginatedLoader<T, HandlerType extends PaginatedHandlerMixin<T>>
   ///   },
   /// );
   /// ```
-  Future<StaleMateFetchMoreResult<T>> fetchMore() async {
+  Future<StaleMateFetchMoreResult<ListItemType>> fetchMore() async {
     // If we are already fetching data, return already fetching
     if (state.loading) {
       _logger.i('Could not fetch more. Already fetching data');
-      return StaleMateFetchMoreResult<T>.alreadyFetching();
+      return StaleMateFetchMoreResult<ListItemType>.alreadyFetching();
     }
 
     _stateManager.setRemoteState(

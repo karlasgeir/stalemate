@@ -43,7 +43,7 @@ import 'stalemate_pagination_config.dart';
 ///   }
 /// }
 /// ```
-mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
+mixin PaginatedHandlerMixin<ListItemType> on StaleMateHandler<List<ListItemType>> {
   /// Pagination config used to load the data in pages
   /// 
   /// This is set automatically by the [StaleMatePaginatedLoader]
@@ -53,7 +53,7 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
   /// - [StaleMatePagePagination]
   /// - [StaleMateOffsetLimitPagination]
   /// - [StaleMateCursorPagination]
-  late StaleMatePaginationConfig<T> paginationConfig;
+  late StaleMatePaginationConfig<ListItemType> paginationConfig;
 
   /// Sets the pagination config
   ///
@@ -64,14 +64,14 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
   /// - [StaleMatePagePagination]
   /// - [StaleMateOffsetLimitPagination]
   /// - [StaleMateCursorPagination]
-  setPaginationConfig(StaleMatePaginationConfig<T> paginationConfig) {
+  setPaginationConfig(StaleMatePaginationConfig<ListItemType> paginationConfig) {
     this.paginationConfig = paginationConfig;
   }
 
   /// Holds the fetch more operation
   ///
   /// This is used to cancel the fetch more operation if needed
-  CancelableOperation<List<T>?>? _fetchMoreOperation;
+  CancelableOperation<List<ListItemType>?>? _fetchMoreOperation;
 
   /// Cancels the fetch more operation if it's in progress
   ///
@@ -93,10 +93,10 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
   /// which handles merging the data and setting the [StaleMatePaginationConfig.canFetchMore] flag
   ///
   /// Returns the page of data based on the [paginationParams]
-  Future<List<T>> getRemotePaginatedData(Map<String, dynamic> paginationParams);
+  Future<List<ListItemType>> getRemotePaginatedData(Map<String, dynamic> paginationParams);
 
   @override
-  Future<List<T>> getRemoteData() async {
+  Future<List<ListItemType>> getRemoteData() async {
     cancelFetchMore();
 
     // Get remote data is only called on initial loading and refresh
@@ -116,8 +116,8 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
 
   bool get canFetchMore => paginationConfig.canFetchMore;
 
-  Future<StaleMateFetchMoreResult<T>> fetchNextPage(
-      List<T> previousData) async {
+  Future<StaleMateFetchMoreResult<ListItemType>> fetchNextPage(
+      List<ListItemType> previousData) async {
     final fetchMoreInitiatedAt = DateTime.now();
     if (paginationConfig.canFetchMore) {
       // Retreive the next query params from the pagination config
@@ -141,7 +141,7 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
         // Other errors will throw an exception
         // Empty respones will be an empty list
         if (newData == null) {
-          return StaleMateFetchMoreResult<T>.cancelled(
+          return StaleMateFetchMoreResult<ListItemType>.cancelled(
             fetchMoreInitiatedAt: fetchMoreInitiatedAt,
             queryParams: queryParams,
           );
@@ -154,7 +154,7 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
 
         // If we can fetch more data, return more data available
         if (paginationConfig.canFetchMore) {
-          final fetchMoreResult = StaleMateFetchMoreResult<T>.moreDataAvailable(
+          final fetchMoreResult = StaleMateFetchMoreResult<ListItemType>.moreDataAvailable(
             fetchMoreInitiatedAt: fetchMoreInitiatedAt,
             queryParams: queryParams,
             newData: newData,
@@ -165,7 +165,7 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
         }
 
         // If we can't fetch more data, return done
-        final fetchMoreResult = StaleMateFetchMoreResult<T>.done(
+        final fetchMoreResult = StaleMateFetchMoreResult<ListItemType>.done(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
           queryParams: queryParams,
           newData: newData,
@@ -174,7 +174,7 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
 
         return fetchMoreResult;
       } catch (error) {
-        return StaleMateFetchMoreResult<T>.failure(
+        return StaleMateFetchMoreResult<ListItemType>.failure(
           fetchMoreInitiatedAt: fetchMoreInitiatedAt,
           queryParams: queryParams,
           error: error,
@@ -187,7 +187,7 @@ mixin PaginatedHandlerMixin<T> on StaleMateHandler<List<T>> {
       // We have no new data since no fetch more was initiated, so we return an empty list
       // We also return the fetchMoreInitiatedAt and fetchMoreFinishedAt times since the user would
       // expect those values to be set when the status is done
-      return StaleMateFetchMoreResult<T>.done(
+      return StaleMateFetchMoreResult<ListItemType>.done(
         fetchMoreInitiatedAt: DateTime.now(),
         queryParams: paginationConfig.getQueryParams(
           previousData.length,

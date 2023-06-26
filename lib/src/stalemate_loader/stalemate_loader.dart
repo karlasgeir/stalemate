@@ -409,7 +409,7 @@ class StaleMateLoader<T, HandlerType extends StaleMateHandler<T>> {
 
   /// Resets the loader
   ///
-  /// - If [removeLocalData] is implemented, removes local data
+  /// - Removes local data if supported by handler
   /// - Adds empty value to stream
   Future<void> reset() async {
     _logger.i('Resetting data...');
