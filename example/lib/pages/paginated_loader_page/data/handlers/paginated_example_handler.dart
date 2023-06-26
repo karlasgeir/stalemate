@@ -7,6 +7,8 @@ import '../datasources/paginated_example_remote_datasource.dart';
 /// The data is loaded from a fake remote source ([PaginatedExampleRemoteDatasource])
 /// and the pagination is handled by the [StaleMatePaginatedLoader]
 ///
+/// Uses the [PaginatedHandlerMixin] to get the pagination functionality
+///
 /// See also:
 /// - [StaleMatePaginatedLoader]
 /// - [PaginatedExampleRemoteDatasource]
@@ -14,7 +16,13 @@ import '../datasources/paginated_example_remote_datasource.dart';
 /// - [StaleMatePagePagination]
 /// - [StaleMateOffsetLimitPagination]
 /// - [StaleMateCursorPagination]
-class PaginatedExampleLoader extends StaleMatePaginatedLoader<String> {
+class PaginatedExampleHandler extends RemoteOnlyStaleMateHandler<List<String>>
+    // Use the PaginatedHandlerMixin to get the pagination functionality
+    with
+        PaginatedHandlerMixin<String> {
+  /// The remote datasource used to fetch the paginated data
+  ///
+  /// In this example, the data is fetched from a fake remote source
   final PaginatedExampleRemoteDatasource _remoteDatasource =
       PaginatedExampleRemoteDatasource();
 
@@ -23,18 +31,10 @@ class PaginatedExampleLoader extends StaleMatePaginatedLoader<String> {
   /// If this flag is set to true, the [getRemotePaginatedData] method will throw
   bool shouldThrowError = false;
 
-  /// Creates a [PaginatedExampleLoader]
-  ///
-  /// Arguments:
-  /// - **paginationConfig:** The pagination config that will be used to paginate the data
-  ///     - [StaleMatePagePagination] : For page based pagination
-  ///     - [StaleMateOffsetLimitPagination] : For offset limit based pagination
-  ///     - [StaleMateCursorPagination] : For cursor based pagination
-  /// - **logLevel:** The log level that will be used to log messages
-  PaginatedExampleLoader({
-    required super.paginationConfig,
-    super.logLevel,
-  });
+  /// Provides an empty value for when the loader is reset
+  /// and to determine if the loader is empty
+  @override
+  List<String> get emptyValue => [];
 
   /// This method is called when the [StaleMatePaginatedLoader] needs to fetch remote data
   ///

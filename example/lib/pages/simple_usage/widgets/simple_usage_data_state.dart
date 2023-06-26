@@ -4,7 +4,7 @@ import 'package:example/widgets/app_page_title.dart';
 import 'package:example/widgets/bullet_points.dart';
 import 'package:flutter/material.dart';
 
-class InitializationRefreshDataState extends StatelessWidget {
+class SimpleUsageDataState extends StatelessWidget {
   final VoidCallback refreshLoader;
   final VoidCallback refreshLoaderWithError;
   final VoidCallback resetLoader;
@@ -14,7 +14,7 @@ class InitializationRefreshDataState extends StatelessWidget {
   final bool isLoading;
   final String data;
 
-  const InitializationRefreshDataState({
+  const SimpleUsageDataState({
     Key? key,
     required this.refreshLoader,
     required this.refreshLoaderWithError,
