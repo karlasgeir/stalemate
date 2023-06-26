@@ -110,7 +110,7 @@ class TodosHandler extends StaleMateHandler<List<ToDo>> {
 
 For data that is not stored server side, extend the **LocalOnlyStaleMateHandler** instead of the **StaleMateHandler**. The main difference is that you won't override the getRemoteData method.
 
-> You can update the data by calling **addData(updatedTodos)** on the loader, see [Manually refreshing the data](#manually-refreshing-the-data)
+> You can update the data by calling **addData(updatedTodos)** on the loader, see [Manually adding data](#manually-adding-data)
 
 Here's an example of a local-only ToDo handler implementation:
 
@@ -320,7 +320,7 @@ Alternatively, you can achieve the same result by using a **StreamBuilder**:
           );
         }
 
-        if (snapshot.hasData && snapshot.data == _todosLoader.emptyValue) {
+        if (snapshot.hasData && !todosLoader.isEmpty) {
           return const Center(
             child: Text('No todos'),
           );
@@ -371,7 +371,7 @@ if (result.isSuccess) {
 The StaleMateRefreshResult object also contains a convenient **on** method:
 
 ```dart
-(await _todosLoader.refresh()).on(
+(await todosLoader.refresh()).on(
     success: (data) {
         // do something on succesful refresh
     },
@@ -386,7 +386,7 @@ The StaleMateRefreshResult object also contains a convenient **on** method:
 You can reset the loader to its initial empty state and remove any local data by calling the **reset** method:
 
 ```dart
-_todosLoader.reset();
+todosLoader.reset();
 ```
 
 ### Manually adding data
@@ -717,7 +717,7 @@ logoutUser() async {
 }
 
 refreshAllTodoLoaders() async {
-    final List<StaleMateRefreshResult> refreshResults = await StaleMate.refreshLoaders<List<ToDo>, TodosHandler>();
+    final List<StaleMateRefreshResult> refreshResults = await StaleMate.refreshLoadersWithHandler<List<ToDo>, TodosHandler>();
 }
 ```
 
