@@ -3,10 +3,11 @@ import 'dart:async';
 import 'package:flutter/widgets.dart';
 
 import '../clock/clock.dart';
+import '../exceptions/not_supported_exception.dart';
 import 'stalemate_refresh_result.dart';
 import 'stalemate_refresh_config.dart';
 
-/// Handles refreshing data for [StaleMateLoaders]s.
+/// Handles refreshing data
 ///
 /// The class uses the [WidgetsBindingObserver] to listen for app lifecycle changes.
 /// On lifecyle change:
@@ -54,11 +55,12 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
   /// Creates a new [StaleMateRefresher]
   ///
   /// Arguments:
-  /// - **onRefresh**: The function that will be called to refresh the data
-  /// - **refreshConfig**: The config that will be used to determine when to refresh the data,
-  ///   if this is null, the data will not be refreshed automatically
-  /// - **clock**: A clock that can be used to determine the current time,
-  ///   defaults to [SystemClock], but can be overridden for testing
+  /// - [onRefresh] : The function that will be called to refresh the data
+  /// - [refreshConfig] : The config that will be used to determine when to refresh the data
+  ///     - If this is null, the data will not be refreshed automatically
+  /// - [clock] : A clock that can be used to determine the current time,
+  ///     - Only used for testing
+  ///     - Defaults to [SystemClock]
   StaleMateRefresher({
     required Future<T> Function() onRefresh,
     StaleMateRefreshConfig? refreshConfig,
@@ -146,12 +148,18 @@ class StaleMateRefresher<T> extends WidgetsBindingObserver {
         refreshFinishedAt: _clock.now(),
       );
     } catch (error) {
-      // Since the refresh timer will be scheduled based on the last refresh time,
-      // we need to update the last refresh time before scheduling the next refresh
-      // even if the refresh failed
-      _lastRefresh = _clock.now();
-      _scheduleNextRefresh();
-      isRefreshing = false;
+      if (error is NotSupportedException) {
+        // If the error is a NotSupportedException, we don't want to schedule the next refresh
+        // because the data loader doesn't support any remote data
+        _stopRefreshTimer();
+      } else {
+        // Since the refresh timer will be scheduled based on the last refresh time,
+        // we need to update the last refresh time before scheduling the next refresh
+        // even if the refresh failed
+        _lastRefresh = _clock.now();
+        _scheduleNextRefresh();
+        isRefreshing = false;
+      }
 
       return StaleMateRefreshResult<T>.failure(
         error: error,

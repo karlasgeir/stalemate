@@ -179,7 +179,7 @@ class StaleMateData<T> {
   @override
   String toString() {
     final buffer = StringBuffer();
-    buffer.write('StaleMateData{');
+    buffer.writeln('StaleMateData{');
     buffer.writeln('    data: $data, ');
     buffer.writeln('    errorData: $errorData, ');
     buffer.writeln('    state: $state, ');
